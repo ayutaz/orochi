@@ -263,3 +263,10 @@ func Err(err error) Field {
 	}
 	return Field{Key: "error", Value: err.Error()}
 }
+
+// NewTest creates a new logger for testing.
+func NewTest() Logger {
+	config := DefaultConfig()
+	config.Level = DebugLevel
+	return New(config)
+}

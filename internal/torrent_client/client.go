@@ -13,13 +13,15 @@ import (
 	"github.com/ayutaz/orochi/internal/config"
 	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/ayutaz/orochi/internal/logger"
+	"github.com/ayutaz/orochi/internal/network"
 )
 
 // Client wraps the anacrolix torrent client.
 type Client struct {
-	client *torrent.Client
-	logger logger.Logger
-	config *config.Config
+	client         *torrent.Client
+	logger         logger.Logger
+	config         *config.Config
+	networkMonitor *network.NetworkMonitor
 }
 
 // NewClient creates a new torrent client.
@@ -40,15 +42,34 @@ func NewClient(cfg *config.Config, log logger.Logger) (*Client, error) {
 		return nil, errors.InternalWithError("failed to create torrent client", err)
 	}
 
-	return &Client{
+	client := &Client{
 		client: torrentClient,
 		logger: log,
 		config: cfg,
-	}, nil
+	}
+
+	// Set up VPN monitoring if enabled
+	if cfg.VPN != nil && cfg.VPN.Enabled {
+		client.networkMonitor = network.NewNetworkMonitor(cfg.VPN)
+		client.networkMonitor.SetLogger(log)
+		client.networkMonitor.Start()
+		
+		log.Info("VPN binding enabled",
+			logger.String("interface", cfg.VPN.InterfaceName),
+			logger.Bool("kill_switch", cfg.VPN.KillSwitch),
+		)
+	}
+
+	return client, nil
 }
 
 // AddTorrent adds a torrent from file data.
 func (c *Client) AddTorrent(_ context.Context, data []byte) (*Torrent, error) {
+	// Check VPN status if kill switch is enabled
+	if c.networkMonitor != nil && !c.networkMonitor.ShouldAllowConnection() {
+		return nil, errors.PermissionDeniedf("VPN kill switch active - VPN connection required")
+	}
+
 	// Parse torrent data
 	metaInfo, err := metainfo.Load(bytes.NewReader(data))
 	if err != nil {
@@ -79,6 +100,11 @@ func (c *Client) AddTorrent(_ context.Context, data []byte) (*Torrent, error) {
 
 // AddMagnet adds a torrent from a magnet link.
 func (c *Client) AddMagnet(ctx context.Context, magnetLink string) (*Torrent, error) {
+	// Check VPN status if kill switch is enabled
+	if c.networkMonitor != nil && !c.networkMonitor.ShouldAllowConnection() {
+		return nil, errors.PermissionDeniedf("VPN kill switch active - VPN connection required")
+	}
+
 	// Add magnet link
 	t, err := c.client.AddMagnet(magnetLink)
 	if err != nil {
@@ -151,8 +177,18 @@ func (c *Client) ListTorrents() []*Torrent {
 
 // Close closes the torrent client.
 func (c *Client) Close() error {
+	// Stop network monitor if running
+	if c.networkMonitor != nil {
+		c.networkMonitor.Stop()
+	}
+	
 	c.client.Close()
 	return nil
+}
+
+// GetNetworkMonitor returns the network monitor if available.
+func (c *Client) GetNetworkMonitor() *network.NetworkMonitor {
+	return c.networkMonitor
 }
 
 // Torrent represents a torrent in the client.
@@ -259,6 +295,15 @@ func (t *Torrent) UploadRate() int64 {
 
 // Start starts downloading the torrent.
 func (t *Torrent) Start() {
+	// Check VPN status if kill switch is enabled
+	if t.client.networkMonitor != nil && !t.client.networkMonitor.ShouldAllowConnection() {
+		t.client.logger.Warn("torrent start blocked by VPN kill switch",
+			logger.String("name", t.Name()),
+			logger.String("info_hash", t.InfoHash()),
+		)
+		return
+	}
+
 	t.torrent.DownloadAll()
 	t.client.logger.Info("torrent started",
 		logger.String("name", t.Name()),

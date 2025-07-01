@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"path/filepath"
+
+	"github.com/ayutaz/orochi/internal/network"
 )
 
 // Validation errors.
@@ -15,13 +17,14 @@ var (
 
 // Config represents the application configuration.
 type Config struct {
-	Port           int      `json:"port"`
-	DownloadDir    string   `json:"download_dir"`
-	MaxTorrents    int      `json:"max_torrents"`
-	MaxPeers       int      `json:"max_peers"`
-	VPNInterface   string   `json:"vpn_interface,omitempty"`
-	DataDir        string   `json:"data_dir,omitempty"`
-	AllowedOrigins []string `json:"allowed_origins,omitempty"`
+	Port           int                  `json:"port"`
+	DownloadDir    string               `json:"download_dir"`
+	MaxTorrents    int                  `json:"max_torrents"`
+	MaxPeers       int                  `json:"max_peers"`
+	VPNInterface   string               `json:"vpn_interface,omitempty"` // Deprecated: use VPN.InterfaceName
+	DataDir        string               `json:"data_dir,omitempty"`
+	AllowedOrigins []string             `json:"allowed_origins,omitempty"`
+	VPN            *network.VPNConfig   `json:"vpn,omitempty"`
 }
 
 // LoadDefault returns the default configuration.
@@ -33,6 +36,7 @@ func LoadDefault() *Config {
 		MaxPeers:       200,
 		DataDir:        "./data",
 		AllowedOrigins: []string{}, // Empty means allow all origins
+		VPN:            network.NewVPNConfig(),
 	}
 }
 
@@ -52,6 +56,22 @@ func (c *Config) Validate() error {
 
 	if c.MaxPeers < 1 {
 		return ErrInvalidMaxPeers
+	}
+
+	// Validate VPN config if present
+	if c.VPN != nil {
+		if err := c.VPN.Validate(); err != nil {
+			return err
+		}
+	}
+
+	// Handle deprecated VPNInterface field
+	if c.VPNInterface != "" && c.VPN == nil {
+		c.VPN = &network.VPNConfig{
+			Enabled:       true,
+			InterfaceName: c.VPNInterface,
+			KillSwitch:    true,
+		}
 	}
 
 	return nil

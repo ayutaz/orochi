@@ -29,6 +29,9 @@ const (
 
 	// ErrCodeParseError indicates a parsing error.
 	ErrCodeParseError ErrorCode = "PARSE_ERROR"
+
+	// ErrCodePermissionDenied indicates permission denied.
+	ErrCodePermissionDenied ErrorCode = "PERMISSION_DENIED"
 )
 
 // AppError represents a structured application error.
@@ -153,4 +156,14 @@ func AuthenticationFailedf(format string, args ...interface{}) *AppError {
 func IsAuthenticationFailed(err error) bool {
 	e, ok := err.(*AppError)
 	return ok && e.Code == ErrCodeUnauthorized
+}
+
+// ValidationErrorf creates a new INVALID_INPUT error with formatting.
+func ValidationErrorf(format string, args ...interface{}) *AppError {
+	return &AppError{Code: ErrCodeInvalidInput, Message: fmt.Sprintf(format, args...)}
+}
+
+// PermissionDeniedf creates a new PERMISSION_DENIED error with formatting.
+func PermissionDeniedf(format string, args ...interface{}) *AppError {
+	return &AppError{Code: ErrCodePermissionDenied, Message: fmt.Sprintf(format, args...)}
 }

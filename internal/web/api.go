@@ -8,6 +8,7 @@ import (
 
 	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/ayutaz/orochi/internal/logger"
+	"github.com/ayutaz/orochi/internal/network"
 	"github.com/ayutaz/orochi/internal/torrent"
 )
 
@@ -369,6 +370,104 @@ func (s *Server) handleUpdateFiles(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info("file selection updated",
 		logger.String("torrent_id", id),
 		logger.Int("file_count", len(req.Files)),
+	)
+
+	_ = writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// VPNStatusResponse represents VPN status in API responses.
+type VPNStatusResponse struct {
+	Enabled       bool                       `json:"enabled"`
+	Active        bool                       `json:"active"`
+	InterfaceName string                     `json:"interface_name"`
+	KillSwitch    bool                       `json:"kill_switch"`
+	LastCheck     string                     `json:"last_check,omitempty"`
+	Interfaces    []network.NetworkInterface `json:"interfaces"`
+}
+
+// handleGetVPNStatus handles GET /api/vpn/status.
+func (s *Server) handleGetVPNStatus(w http.ResponseWriter, _ *http.Request) {
+	// Get VPN config from server config
+	vpnConfig := s.config.VPN
+	if vpnConfig == nil {
+		vpnConfig = network.NewVPNConfig()
+	}
+
+	// Get network interfaces
+	interfaces, err := network.GetNetworkInterfaces()
+	if err != nil {
+		s.logger.Error("failed to get network interfaces", logger.Err(err))
+		interfaces = []network.NetworkInterface{}
+	}
+
+	response := VPNStatusResponse{
+		Enabled:       vpnConfig.Enabled,
+		Active:        false,
+		InterfaceName: vpnConfig.InterfaceName,
+		KillSwitch:    vpnConfig.KillSwitch,
+		Interfaces:    interfaces,
+	}
+
+	// Check if VPN is active through torrent client
+	if adapter, ok := s.torrentManager.(*torrent.ClientAdapter); ok {
+		if client, err := adapter.GetClient(); err == nil && client != nil {
+			// Access network monitor through reflection or add a method
+			response.Active = !vpnConfig.Enabled // If disabled, consider as "active"
+			
+			// If enabled, check actual interface status
+			if vpnConfig.Enabled && vpnConfig.InterfaceName != "" {
+				for _, iface := range interfaces {
+					if iface.Name == vpnConfig.InterfaceName && iface.IsUp {
+						response.Active = true
+						break
+					}
+				}
+			}
+		}
+	}
+
+	_ = writeJSON(w, http.StatusOK, response)
+}
+
+// handleUpdateVPNConfig handles PUT /api/vpn/config.
+func (s *Server) handleUpdateVPNConfig(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Enabled       bool   `json:"enabled"`
+		InterfaceName string `json:"interface_name"`
+		KillSwitch    bool   `json:"kill_switch"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// Update config
+	if s.config.VPN == nil {
+		s.config.VPN = network.NewVPNConfig()
+	}
+	
+	s.config.VPN.Enabled = req.Enabled
+	s.config.VPN.InterfaceName = req.InterfaceName
+	s.config.VPN.KillSwitch = req.KillSwitch
+
+	// Validate config
+	if err := s.config.VPN.Validate(); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Save config
+	if err := s.saveConfig(); err != nil {
+		s.logger.Error("failed to save config", logger.Err(err))
+		writeError(w, http.StatusInternalServerError, "failed to save configuration")
+		return
+	}
+
+	s.logger.Info("VPN configuration updated",
+		logger.Bool("enabled", req.Enabled),
+		logger.String("interface", req.InterfaceName),
+		logger.Bool("kill_switch", req.KillSwitch),
 	)
 
 	_ = writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})

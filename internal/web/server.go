@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -118,6 +120,10 @@ func (s *Server) setupRoutes() {
 	// Settings endpoints
 	api.GET("/settings", s.wrapHandler(s.handleGetSettings))
 	api.PUT("/settings", s.wrapHandler(s.handleUpdateSettings))
+
+	// VPN endpoints
+	api.GET("/vpn/status", s.wrapHandler(s.handleGetVPNStatus))
+	api.PUT("/vpn/config", s.wrapHandler(s.handleUpdateVPNConfig))
 
 	// WebSocket endpoint
 	s.router.GET("/ws", s.wrapHandler(s.handleWebSocket))
@@ -266,4 +272,28 @@ func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	if err := json.NewEncoder(w).Encode(snapshot); err != nil {
 		s.logger.Error("failed to encode metrics", logger.Err(err))
 	}
+}
+
+// saveConfig saves the current configuration to disk.
+func (s *Server) saveConfig() error {
+	// Get config file path
+	configPath := filepath.Join(s.config.DataDir, "config.json")
+
+	// Ensure data directory exists
+	if err := os.MkdirAll(s.config.DataDir, 0755); err != nil {
+		return fmt.Errorf("failed to create data directory: %w", err)
+	}
+
+	// Marshal config to JSON
+	data, err := json.MarshalIndent(s.config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
 }
