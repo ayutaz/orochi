@@ -104,7 +104,7 @@ func TestConfig_GetAbsoluteDownloadDir(t *testing.T) {
 		} else {
 			expectedPath = "/tmp/downloads"
 		}
-		
+
 		config := &Config{
 			DownloadDir: expectedPath,
 		}
