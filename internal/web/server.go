@@ -2,12 +2,16 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/ayutaz/orochi/internal/config"
+	"github.com/ayutaz/orochi/internal/logger"
+	"github.com/ayutaz/orochi/internal/metrics"
 	"github.com/ayutaz/orochi/internal/torrent"
 )
 
@@ -15,16 +19,36 @@ import (
 type Server struct {
 	config         *config.Config
 	httpServer     *http.Server
-	mux            *http.ServeMux
+	router         *Router
 	torrentManager torrent.Manager
+	logger         logger.Logger
+}
+
+// Router returns the server's router for testing
+func (s *Server) Router() http.Handler {
+	return s.router
 }
 
 // NewServer creates a new HTTP server.
 func NewServer(cfg *config.Config) *Server {
+	// Create logger
+	log := logger.NewWithLevel(logger.InfoLevel).WithFields(
+		logger.String("component", "web-server"),
+	)
+	
 	s := &Server{
 		config: cfg,
-		mux:    http.NewServeMux(),
+		router: NewRouter(),
+		logger: log,
 	}
+
+	// Set up middleware
+	s.router.Use(
+		RequestIDMiddleware(),
+		LoggingMiddleware(log),
+		RecoveryMiddleware(log),
+		CORSMiddleware([]string{"*"}),
+	)
 
 	// Set up routes
 	s.setupRoutes()
@@ -32,7 +56,7 @@ func NewServer(cfg *config.Config) *Server {
 	// Create HTTP server
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      s.mux,
+		Handler:      s.router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -49,20 +73,34 @@ func (s *Server) SetTorrentManager(tm torrent.Manager) {
 // setupRoutes configures all HTTP routes.
 func (s *Server) setupRoutes() {
 	// Health check
-	s.mux.HandleFunc("/health", s.handleHealth)
+	s.router.GET("/health", s.wrapHandler(s.handleHealth))
 	
-	// API routes
-	s.mux.HandleFunc("/api/torrents", s.handleAPITorrents)
-	s.mux.HandleFunc("/api/torrents/", s.handleAPITorrent)
-	s.mux.HandleFunc("/api/torrents/magnet", s.handleAPITorrentMagnet)
+	// Metrics endpoint
+	s.router.GET("/metrics", s.wrapHandler(s.handleMetrics))
+	
+	// API routes group
+	api := s.router.Group("/api", RequireTorrentManager(s))
+	
+	// Torrent endpoints
+	api.GET("/torrents", s.wrapHandler(s.handleListTorrents))
+	api.POST("/torrents", s.wrapHandler(s.handleAddTorrent))
+	api.POST("/torrents/magnet", s.wrapHandler(s.handleAddMagnet))
+	api.GET("/torrents/:id", s.wrapHandler(s.handleGetTorrent))
+	api.DELETE("/torrents/:id", s.wrapHandler(s.handleDeleteTorrent))
+	api.POST("/torrents/:id/start", s.wrapHandler(s.handleStartTorrent))
+	api.POST("/torrents/:id/stop", s.wrapHandler(s.handleStopTorrent))
 	
 	// Web UI
-	s.mux.HandleFunc("/", s.handleHome)
+	s.router.GET("/", s.wrapHandler(s.handleHome))
+	s.router.GET("/*", s.wrapHandler(s.handleStatic))
 }
 
-// ServeHTTP implements http.Handler interface.
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+// wrapHandler converts a standard handler to our HandlerFunc
+func (s *Server) wrapHandler(handler func(w http.ResponseWriter, r *http.Request)) HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		handler(w, r)
+		return nil
+	}
 }
 
 // Start starts the HTTP server.
@@ -85,30 +123,76 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 // handleHome handles the home page.
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
-	// Serve static files
-	if r.URL.Path != "/" {
-		staticFS, err := GetStaticFS()
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
-		return
-	}
-	
-	// Serve index.html for root path
 	templatesFS, err := GetTemplatesFS()
 	if err != nil {
+		s.logger.Error("failed to get templates FS", logger.Err(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	
 	indexHTML, err := fs.ReadFile(templatesFS, "index.html")
 	if err != nil {
+		s.logger.Error("failed to read index.html", logger.Err(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(indexHTML)
+}
+
+// handleStatic handles static file requests
+func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
+	staticFS, err := GetStaticFS()
+	if err != nil {
+		s.logger.Error("failed to get static FS", logger.Err(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
+}
+
+// handleMetrics handles metrics endpoint
+func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	// Update system metrics
+	m := metrics.Get()
+	
+	// Get memory stats
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	m.SetMemoryUsage(int64(memStats.Alloc))
+	
+	// Get goroutine count
+	m.SetGoroutineCount(int32(runtime.NumGoroutine()))
+	
+	// Get torrent metrics if manager is available
+	if s.torrentManager != nil {
+		torrents := s.torrentManager.ListTorrents()
+		m.TorrentsTotal = int64(len(torrents))
+		
+		// Reset status counters
+		m.TorrentsDownloading = 0
+		m.TorrentsSeeding = 0
+		m.TorrentsStopped = 0
+		m.TorrentsError = 0
+		
+		// Count by status
+		for _, t := range torrents {
+			switch t.Status {
+			case torrent.StatusDownloading:
+				m.TorrentsDownloading++
+			case torrent.StatusSeeding:
+				m.TorrentsSeeding++
+			case torrent.StatusStopped:
+				m.TorrentsStopped++
+			case torrent.StatusError:
+				m.TorrentsError++
+			}
+		}
+	}
+	
+	// Return metrics snapshot
+	snapshot := m.Snapshot()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(snapshot)
 }

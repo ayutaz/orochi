@@ -63,7 +63,7 @@ func TestServer_Routes(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.path, nil)
 			w := httptest.NewRecorder()
 
-			server.ServeHTTP(w, req)
+			server.router.ServeHTTP(w, req)
 
 			if w.Code != tt.wantStatus {
 				t.Errorf("expected status %d, got %d", tt.wantStatus, w.Code)
@@ -80,7 +80,7 @@ func TestServer_HealthCheck(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)

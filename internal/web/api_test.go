@@ -22,7 +22,7 @@ func TestAPI_Torrents(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/torrents", nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
@@ -61,7 +61,7 @@ func TestAPI_Torrents(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", w.Code)
@@ -87,7 +87,7 @@ func TestAPI_Torrents(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", w.Code)
@@ -118,7 +118,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/torrents/"+id, nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
@@ -138,7 +138,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/torrents/"+id+"/start", nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
@@ -155,7 +155,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/torrents/"+id+"/stop", nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
@@ -172,7 +172,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/api/torrents/"+id, nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusNoContent {
 			t.Errorf("expected status 204, got %d", w.Code)
@@ -188,7 +188,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/torrents/nonexistent", nil)
 		w := httptest.NewRecorder()
 
-		server.ServeHTTP(w, req)
+		server.router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusNotFound {
 			t.Errorf("expected status 404, got %d", w.Code)
