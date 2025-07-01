@@ -33,9 +33,7 @@ func (l *Loader) Load() (*Config, error) {
 	config := LoadDefault()
 	
 	// Try to load from config file
-	if err := l.loadFromFile(config); err != nil {
-		// Config file is optional, so we don't return error
-	}
+	_ = l.loadFromFile(config) // Config file is optional
 	
 	// Override with environment variables
 	l.loadFromEnv(config)
@@ -84,15 +82,15 @@ func (l *Loader) loadFromEnv(config *Config) {
 	
 	// Check for max torrents
 	if maxStr := os.Getenv(l.envPrefix + "MAX_TORRENTS"); maxStr != "" {
-		if max := parseInt(maxStr); max > 0 {
-			config.MaxTorrents = max
+		if maxTorrents := parseInt(maxStr); maxTorrents > 0 {
+			config.MaxTorrents = maxTorrents
 		}
 	}
 	
 	// Check for max peers
 	if maxStr := os.Getenv(l.envPrefix + "MAX_PEERS"); maxStr != "" {
-		if max := parseInt(maxStr); max > 0 {
-			config.MaxPeers = max
+		if maxPeers := parseInt(maxStr); maxPeers > 0 {
+			config.MaxPeers = maxPeers
 		}
 	}
 	
@@ -106,7 +104,7 @@ func (l *Loader) loadFromEnv(config *Config) {
 func SaveConfig(config *Config, path string) error {
 	// Ensure directory exists
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	
@@ -117,7 +115,7 @@ func SaveConfig(config *Config, path string) error {
 	}
 	
 	// Write to file
-	return os.WriteFile(path, data, 0600)
+	return os.WriteFile(path, data, 0o600)
 }
 
 // getHomeDir returns the user's home directory

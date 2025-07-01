@@ -5,6 +5,14 @@ import (
 	"path/filepath"
 )
 
+// Validation errors.
+var (
+	ErrInvalidPort      = errors.New("invalid port number: must be between 1 and 65535")
+	ErrEmptyDownloadDir = errors.New("download directory cannot be empty")
+	ErrInvalidMaxTorrents = errors.New("max torrents must be at least 1")
+	ErrInvalidMaxPeers = errors.New("max peers must be at least 1")
+)
+
 // Config represents the application configuration.
 type Config struct {
 	Port         int    `json:"port"`
@@ -27,19 +35,19 @@ func LoadDefault() *Config {
 // Validate checks if the configuration is valid.
 func (c *Config) Validate() error {
 	if c.Port < 1 || c.Port > 65535 {
-		return errors.New("invalid port number: must be between 1 and 65535")
+		return ErrInvalidPort
 	}
 	
 	if c.DownloadDir == "" {
-		return errors.New("download directory cannot be empty")
+		return ErrEmptyDownloadDir
 	}
 	
 	if c.MaxTorrents < 1 {
-		return errors.New("max torrents must be at least 1")
+		return ErrInvalidMaxTorrents
 	}
 	
 	if c.MaxPeers < 1 {
-		return errors.New("max peers must be at least 1")
+		return ErrInvalidMaxPeers
 	}
 	
 	return nil
