@@ -77,7 +77,6 @@ func TestClientAdapter(t *testing.T) {
 		t.Errorf("failed to stop torrent: %v", err)
 	}
 
-
 	// Test RemoveTorrent
 	err = adapter.RemoveTorrent(id)
 	if err != nil {

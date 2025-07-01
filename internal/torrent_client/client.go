@@ -1,4 +1,4 @@
-package torrent_client
+package torrentclient
 
 import (
 	"bytes"
@@ -48,7 +48,7 @@ func NewClient(cfg *config.Config, log logger.Logger) (*Client, error) {
 }
 
 // AddTorrent adds a torrent from file data.
-func (c *Client) AddTorrent(ctx context.Context, data []byte) (*Torrent, error) {
+func (c *Client) AddTorrent(_ context.Context, data []byte) (*Torrent, error) {
 	// Parse torrent data
 	metaInfo, err := metainfo.Load(bytes.NewReader(data))
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *Client) GetTorrent(infoHash string) (*Torrent, error) {
 	if len(infoHash) != 40 {
 		return nil, errors.InvalidInputf("invalid info hash length: %d (expected 40)", len(infoHash))
 	}
-	
+
 	// Parse info hash
 	ih := metainfo.NewHashFromHex(infoHash)
 
@@ -212,20 +212,20 @@ func (t *Torrent) Stats() torrent.TorrentStats {
 func (t *Torrent) DownloadRate() int64 {
 	currentStats := t.torrent.Stats()
 	now := time.Now()
-	
+
 	// Calculate rate based on change since last update
 	if t.lastUpdate.IsZero() || now.Sub(t.lastUpdate) < time.Second {
 		// Not enough time has passed for accurate measurement
 		return 0
 	}
-	
+
 	timeDelta := now.Sub(t.lastUpdate).Seconds()
 	bytesDelta := currentStats.BytesReadUsefulData.Int64() - t.lastStats.BytesReadUsefulData.Int64()
-	
+
 	// Update cached stats
 	t.lastStats = currentStats
 	t.lastUpdate = now
-	
+
 	if timeDelta > 0 {
 		return int64(float64(bytesDelta) / timeDelta)
 	}
@@ -236,16 +236,16 @@ func (t *Torrent) DownloadRate() int64 {
 func (t *Torrent) UploadRate() int64 {
 	currentStats := t.torrent.Stats()
 	now := time.Now()
-	
+
 	// Calculate rate based on change since last update
 	if t.lastUpdate.IsZero() || now.Sub(t.lastUpdate) < time.Second {
 		// Not enough time has passed for accurate measurement
 		return 0
 	}
-	
+
 	timeDelta := now.Sub(t.lastUpdate).Seconds()
 	bytesDelta := currentStats.BytesWrittenData.Int64() - t.lastStats.BytesWrittenData.Int64()
-	
+
 	if timeDelta > 0 {
 		return int64(float64(bytesDelta) / timeDelta)
 	}
@@ -305,17 +305,17 @@ func (t *Torrent) SavePath() string {
 func (t *Torrent) GetStats() Stats {
 	stats := t.torrent.Stats()
 	return Stats{
-		BytesRead:            stats.BytesRead.Int64(),
-		BytesWritten:         stats.BytesWritten.Int64(),
-		BytesReadData:        stats.BytesReadData.Int64(),
-		BytesWrittenData:     stats.BytesWrittenData.Int64(),
-		ChunksReadWasted:     stats.ChunksReadWasted.Int64(),
-		ChunksWritten:        stats.ChunksWritten.Int64(),
-		PiecesDirtiedGood:    stats.PiecesDirtiedGood.Int64(),
-		PiecesDirtiedBad:     stats.PiecesDirtiedBad.Int64(),
-		ActivePeers:          len(t.torrent.PeerConns()),
-		ConnectedSeeders:     t.countSeeders(),
-		TotalPeers:           len(t.torrent.KnownSwarm()),
+		BytesRead:         stats.BytesRead.Int64(),
+		BytesWritten:      stats.BytesWritten.Int64(),
+		BytesReadData:     stats.BytesReadData.Int64(),
+		BytesWrittenData:  stats.BytesWrittenData.Int64(),
+		ChunksReadWasted:  stats.ChunksReadWasted.Int64(),
+		ChunksWritten:     stats.ChunksWritten.Int64(),
+		PiecesDirtiedGood: stats.PiecesDirtiedGood.Int64(),
+		PiecesDirtiedBad:  stats.PiecesDirtiedBad.Int64(),
+		ActivePeers:       len(t.torrent.PeerConns()),
+		ConnectedSeeders:  t.countSeeders(),
+		TotalPeers:        len(t.torrent.KnownSwarm()),
 	}
 }
 
@@ -337,17 +337,17 @@ type File struct {
 
 // Stats represents torrent statistics.
 type Stats struct {
-	BytesRead            int64
-	BytesWritten         int64
-	BytesReadData        int64
-	BytesWrittenData     int64
-	ChunksReadWasted     int64
-	ChunksWritten        int64
-	PiecesDirtiedGood    int64
-	PiecesDirtiedBad     int64
-	ActivePeers          int
-	ConnectedSeeders     int
-	TotalPeers           int
+	BytesRead         int64
+	BytesWritten      int64
+	BytesReadData     int64
+	BytesWrittenData  int64
+	ChunksReadWasted  int64
+	ChunksWritten     int64
+	PiecesDirtiedGood int64
+	PiecesDirtiedBad  int64
+	ActivePeers       int
+	ConnectedSeeders  int
+	TotalPeers        int
 }
 
 // String returns a formatted string of the stats.

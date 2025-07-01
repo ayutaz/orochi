@@ -7,18 +7,18 @@ import (
 
 	"github.com/ayutaz/orochi/internal/config"
 	"github.com/ayutaz/orochi/internal/logger"
-	"github.com/ayutaz/orochi/internal/torrent_client"
+	torrentclient "github.com/ayutaz/orochi/internal/torrent_client"
 )
 
 // ClientAdapter adapts torrent_client.Client to the Manager interface.
 type ClientAdapter struct {
-	client *torrent_client.Client
+	client *torrentclient.Client
 	logger logger.Logger
 }
 
 // NewClientAdapter creates a new adapter for the torrent client.
 func NewClientAdapter(cfg *config.Config, log logger.Logger) (*ClientAdapter, error) {
-	client, err := torrent_client.NewClient(cfg, log)
+	client, err := torrentclient.NewClient(cfg, log)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (a *ClientAdapter) mapStatus(status string) Status {
 }
 
 // createTorrentInfo creates a TorrentInfo from the torrent client torrent.
-func (a *ClientAdapter) createTorrentInfo(torr *torrent_client.Torrent) *TorrentInfo {
+func (a *ClientAdapter) createTorrentInfo(torr *torrentclient.Torrent) *TorrentInfo {
 	// Convert files
 	files := torr.Files()
 	fileInfos := make([]FileInfo, len(files))
@@ -98,13 +98,13 @@ func (a *ClientAdapter) createTorrentInfo(torr *torrent_client.Torrent) *Torrent
 			Length: f.Length,
 		}
 	}
-	
+
 	return &TorrentInfo{
 		InfoHash:    torr.InfoHash(),
 		Name:        torr.Name(),
 		Length:      torr.Length(),
-		PieceLength: 0, // TODO: get from torrent
-		Announce:    "", // TODO: get from torrent
+		PieceLength: 0,          // TODO: get from torrent
+		Announce:    "",         // TODO: get from torrent
 		Trackers:    []string{}, // TODO: get from torrent
 		Files:       fileInfos,
 	}
@@ -162,7 +162,6 @@ func (a *ClientAdapter) StopTorrent(id string) error {
 func (a *ClientAdapter) Count() int {
 	return len(a.client.ListTorrents())
 }
-
 
 // Close closes the adapter and underlying client.
 func (a *ClientAdapter) Close() error {

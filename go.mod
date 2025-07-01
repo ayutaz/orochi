@@ -4,7 +4,11 @@ go 1.23
 
 toolchain go1.24.4
 
-require github.com/zeebo/bencode v1.0.0
+require (
+	github.com/anacrolix/torrent v1.58.1
+	github.com/gorilla/websocket v1.5.3
+	github.com/zeebo/bencode v1.0.0
+)
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3 // indirect
@@ -23,7 +27,6 @@ require (
 	github.com/anacrolix/multiless v0.4.0 // indirect
 	github.com/anacrolix/stm v0.4.0 // indirect
 	github.com/anacrolix/sync v0.5.1 // indirect
-	github.com/anacrolix/torrent v1.58.1 // indirect
 	github.com/anacrolix/upnp v0.1.4 // indirect
 	github.com/anacrolix/utp v0.1.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -40,7 +43,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect

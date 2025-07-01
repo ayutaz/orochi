@@ -94,7 +94,7 @@ func main() {
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
-		
+
 		for range ticker.C {
 			// Send actual torrent data via WebSocket
 			server.BroadcastTorrentData()

@@ -22,7 +22,7 @@ type Server struct {
 	router         *Router
 	torrentManager torrent.Manager
 	logger         logger.Logger
-	wsHub          *WebSocketHub
+	wsHub          *Hub
 }
 
 // Router returns the server's router for testing.
@@ -41,7 +41,7 @@ func NewServer(cfg *config.Config) *Server {
 		config: cfg,
 		router: NewRouter(),
 		logger: log,
-		wsHub:  NewWebSocketHub(log),
+		wsHub:  NewHub(log),
 	}
 
 	// Set up middleware
@@ -83,13 +83,13 @@ func (s *Server) BroadcastTorrentUpdate() {
 func (s *Server) BroadcastTorrentData() {
 	if s.wsHub != nil && s.torrentManager != nil {
 		torrents := s.torrentManager.ListTorrents()
-		
+
 		// Convert to API response format
 		torrentResponses := make([]TorrentResponse, 0, len(torrents))
 		for _, t := range torrents {
 			torrentResponses = append(torrentResponses, toTorrentResponse(t))
 		}
-		
+
 		s.wsHub.BroadcastTorrentData(torrentResponses)
 	}
 }
@@ -114,7 +114,7 @@ func (s *Server) setupRoutes() {
 	api.POST("/torrents/:id/start", s.wrapHandler(s.handleStartTorrent))
 	api.POST("/torrents/:id/stop", s.wrapHandler(s.handleStopTorrent))
 	api.PUT("/torrents/:id/files", s.wrapHandler(s.handleUpdateFiles))
-	
+
 	// Settings endpoints
 	api.GET("/settings", s.wrapHandler(s.handleGetSettings))
 	api.PUT("/settings", s.wrapHandler(s.handleUpdateSettings))
@@ -139,7 +139,7 @@ func (s *Server) wrapHandler(handler func(w http.ResponseWriter, r *http.Request
 func (s *Server) Start() error {
 	// Start WebSocket hub
 	go s.wsHub.Run()
-	
+
 	return s.httpServer.ListenAndServe()
 }
 
@@ -157,7 +157,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 // handleHome handles the home page.
-func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleHome(w http.ResponseWriter, _ *http.Request) {
 	// Try to serve React app from dist directory first
 	staticFS, err := GetStaticFS()
 	if err == nil {
@@ -200,19 +200,19 @@ func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	// For React app routes, serve index.html
 	path := r.URL.Path
-	if path == "/torrent" || path == "/settings" || 
+	if path == "/torrent" || path == "/settings" ||
 		(len(path) > 8 && path[:8] == "/torrent/") {
 		indexHTML, err := fs.ReadFile(staticFS, "index.html")
 		if err == nil {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write(indexHTML)
+			_, _ = w.Write(indexHTML)
 			return
 		}
 	}
-	
+
 	http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
 }
 

@@ -18,16 +18,16 @@ type APIError struct {
 
 // TorrentResponse represents a torrent in API responses.
 type TorrentResponse struct {
-	ID           string                 `json:"id"`
-	Info         torrent.TorrentInfo    `json:"info"`
-	Status       string                 `json:"status"`
-	Progress     float64                `json:"progress"`
-	Downloaded   int64                  `json:"downloaded"`
-	Uploaded     int64                  `json:"uploaded"`
-	DownloadRate int64                  `json:"downloadRate"`
-	UploadRate   int64                  `json:"uploadRate"`
-	AddedAt      string                 `json:"addedAt"`
-	Error        string                 `json:"error,omitempty"`
+	ID           string              `json:"id"`
+	Info         torrent.TorrentInfo `json:"info"`
+	Status       string              `json:"status"`
+	Progress     float64             `json:"progress"`
+	Downloaded   int64               `json:"downloaded"`
+	Uploaded     int64               `json:"uploaded"`
+	DownloadRate int64               `json:"downloadRate"`
+	UploadRate   int64               `json:"uploadRate"`
+	AddedAt      string              `json:"addedAt"`
+	Error        string              `json:"error,omitempty"`
 }
 
 // toTorrentResponse converts a torrent to API response format.
@@ -61,13 +61,13 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // handleListTorrents handles GET /api/torrents.
 func (s *Server) handleListTorrents(w http.ResponseWriter, _ *http.Request) {
 	torrents := s.torrentManager.ListTorrents()
-	
+
 	// Convert to API response format
 	responses := make([]TorrentResponse, 0, len(torrents))
 	for _, t := range torrents {
 		responses = append(responses, toTorrentResponse(t))
 	}
-	
+
 	_ = writeJSON(w, http.StatusOK, responses)
 }
 
@@ -154,7 +154,7 @@ func (s *Server) handleGetTorrent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "torrent not found")
 		return
 	}
-	
+
 	// Convert to API response format
 	response := toTorrentResponse(torrentObj)
 	_ = writeJSON(w, http.StatusOK, response)

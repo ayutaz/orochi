@@ -9,33 +9,33 @@ import (
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
+	CheckOrigin: func(_ *http.Request) bool {
 		// Allow all origins in development
 		// TODO: Restrict in production
 		return true
 	},
 }
 
-// WebSocketMessage represents a message sent over WebSocket.
-type WebSocketMessage struct {
+// Message represents a message sent over WebSocket.
+type Message struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
 }
 
-// WebSocketHub manages WebSocket connections.
-type WebSocketHub struct {
+// Hub manages WebSocket connections.
+type Hub struct {
 	clients    map[*websocket.Conn]bool
-	broadcast  chan WebSocketMessage
+	broadcast  chan Message
 	register   chan *websocket.Conn
 	unregister chan *websocket.Conn
 	logger     logger.Logger
 }
 
-// NewWebSocketHub creates a new WebSocket hub.
-func NewWebSocketHub(log logger.Logger) *WebSocketHub {
-	return &WebSocketHub{
+// NewHub creates a new WebSocket hub.
+func NewHub(log logger.Logger) *Hub {
+	return &Hub{
 		clients:    make(map[*websocket.Conn]bool),
-		broadcast:  make(chan WebSocketMessage),
+		broadcast:  make(chan Message),
 		register:   make(chan *websocket.Conn),
 		unregister: make(chan *websocket.Conn),
 		logger:     log,
@@ -43,7 +43,7 @@ func NewWebSocketHub(log logger.Logger) *WebSocketHub {
 }
 
 // Run starts the WebSocket hub.
-func (h *WebSocketHub) Run() {
+func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
@@ -70,8 +70,8 @@ func (h *WebSocketHub) Run() {
 }
 
 // BroadcastTorrentUpdate sends a torrent update to all connected clients.
-func (h *WebSocketHub) BroadcastTorrentUpdate() {
-	h.broadcast <- WebSocketMessage{
+func (h *Hub) BroadcastTorrentUpdate() {
+	h.broadcast <- Message{
 		Type: "torrent_update",
 		Data: map[string]interface{}{
 			"timestamp": time.Now().Unix(),
@@ -80,8 +80,8 @@ func (h *WebSocketHub) BroadcastTorrentUpdate() {
 }
 
 // BroadcastTorrentData sends actual torrent data to all connected clients.
-func (h *WebSocketHub) BroadcastTorrentData(torrents interface{}) {
-	h.broadcast <- WebSocketMessage{
+func (h *Hub) BroadcastTorrentData(torrents interface{}) {
+	h.broadcast <- Message{
 		Type: "torrents",
 		Data: torrents,
 	}
@@ -103,9 +103,9 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			s.wsHub.unregister <- conn
 		}()
 
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		conn.SetPongHandler(func(string) error {
-			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 			return nil
 		})
 
@@ -125,12 +125,9 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
-		for {
-			select {
-			case <-ticker.C:
-				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					return
-				}
+		for range ticker.C {
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
 			}
 		}
 	}()
