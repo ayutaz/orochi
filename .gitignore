@@ -35,9 +35,13 @@ downloads/
 config.json
 
 # Build output
-dist/
+/dist/
 build/
 simple-torrent
+orochi
+
+# Don't ignore internal/web/dist - this is the embedded UI
+!internal/web/dist/
 
 # Coverage reports
 coverage.out
