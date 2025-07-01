@@ -174,7 +174,7 @@ func benchmarkManagerOperations(b *testing.B, manager torrent.Manager) {
 // TestLoadPerformance tests performance under high load.
 func TestLoadPerformance(t *testing.T) {
 	t.Skip("Temporarily skipping load test due to race condition")
-	
+
 	if testing.Short() {
 		t.Skip("skipping load test in short mode")
 	}
