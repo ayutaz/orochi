@@ -2,6 +2,7 @@ package config
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -96,14 +97,22 @@ func TestConfig_GetAbsoluteDownloadDir(t *testing.T) {
 	})
 
 	t.Run("既に絶対パスの場合はそのまま返す", func(t *testing.T) {
+		// Windowsでは異なるパス形式を使用
+		var expectedPath string
+		if runtime.GOOS == "windows" {
+			expectedPath = `C:\tmp\downloads`
+		} else {
+			expectedPath = "/tmp/downloads"
+		}
+		
 		config := &Config{
-			DownloadDir: "/tmp/downloads",
+			DownloadDir: expectedPath,
 		}
 
 		absPath := config.GetAbsoluteDownloadDir()
 
-		if absPath != "/tmp/downloads" {
-			t.Errorf("expected /tmp/downloads, got %s", absPath)
+		if absPath != expectedPath {
+			t.Errorf("expected %s, got %s", expectedPath, absPath)
 		}
 	})
 }
