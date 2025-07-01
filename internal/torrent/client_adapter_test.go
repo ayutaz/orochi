@@ -19,6 +19,7 @@ func TestClientAdapter(t *testing.T) {
 	cfg := &config.Config{
 		Port:        0, // Use random port
 		DownloadDir: tmpDir,
+		DataDir:     tmpDir,
 	}
 	log := logger.NewWithLevel(logger.ErrorLevel)
 
@@ -101,6 +102,7 @@ func TestClientAdapterErrors(t *testing.T) {
 	cfg := &config.Config{
 		Port:        0, // Use random port
 		DownloadDir: tmpDir,
+		DataDir:     tmpDir,
 	}
 	log := logger.NewWithLevel(logger.ErrorLevel)
 
@@ -147,6 +149,7 @@ func TestClientAdapterMapStatus(t *testing.T) {
 	cfg := &config.Config{
 		Port:        0, // Use random port
 		DownloadDir: tmpDir,
+		DataDir:     tmpDir,
 	}
 	log := logger.NewWithLevel(logger.ErrorLevel)
 

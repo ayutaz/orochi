@@ -247,7 +247,7 @@ func (s *Server) handleGetSettings(w http.ResponseWriter, _ *http.Request) {
 	// Get settings from database if available
 	adapter, ok := s.torrentManager.(*torrent.ClientAdapter)
 	if ok {
-		client, err := adapter.GetClient()
+		_, err := adapter.GetClient()
 		if err == nil {
 			db := adapter.GetDB()
 			if db != nil {

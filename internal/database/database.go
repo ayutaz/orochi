@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/ayutaz/orochi/internal/logger"
+
+	_ "modernc.org/sqlite" // Pure Go SQLite driver
 )
 
 // DB represents the database connection.
@@ -18,29 +19,29 @@ type DB struct {
 
 // TorrentRecord represents a torrent record in the database.
 type TorrentRecord struct {
-	ID           string    `json:"id"`
-	InfoHash     string    `json:"info_hash"`
-	Name         string    `json:"name"`
-	Size         int64     `json:"size"`
-	Status       string    `json:"status"`
-	Progress     float64   `json:"progress"`
-	Downloaded   int64     `json:"downloaded"`
-	Uploaded     int64     `json:"uploaded"`
-	DownloadPath string    `json:"download_path"`
-	AddedAt      time.Time `json:"added_at"`
+	ID           string     `json:"id"`
+	InfoHash     string     `json:"info_hash"`
+	Name         string     `json:"name"`
+	Size         int64      `json:"size"`
+	Status       string     `json:"status"`
+	Progress     float64    `json:"progress"`
+	Downloaded   int64      `json:"downloaded"`
+	Uploaded     int64      `json:"uploaded"`
+	DownloadPath string     `json:"download_path"`
+	AddedAt      time.Time  `json:"added_at"`
 	CompletedAt  *time.Time `json:"completed_at,omitempty"`
-	Metadata     string    `json:"metadata"` // JSON encoded torrent file data
+	Metadata     string     `json:"metadata"` // JSON encoded torrent file data
 }
 
 // NewDB creates a new database connection.
 func NewDB(dbPath string, log logger.Logger) (*DB, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		return nil, errors.InternalErrorf("failed to open database: %w", err)
+		return nil, errors.InternalErrorf("failed to open database: %v", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, errors.InternalErrorf("failed to ping database: %w", err)
+		return nil, errors.InternalErrorf("failed to ping database: %v", err)
 	}
 
 	d := &DB{
@@ -87,7 +88,7 @@ func (d *DB) createTables() error {
 
 	_, err := d.db.Exec(schema)
 	if err != nil {
-		return errors.InternalErrorf("failed to create tables: %w", err)
+		return errors.InternalErrorf("failed to create tables: %v", err)
 	}
 
 	return nil
@@ -118,7 +119,7 @@ func (d *DB) SaveTorrent(record *TorrentRecord) error {
 		record.Metadata,
 	)
 	if err != nil {
-		return errors.InternalErrorf("failed to save torrent: %w", err)
+		return errors.InternalErrorf("failed to save torrent: %v", err)
 	}
 
 	return nil
@@ -155,7 +156,7 @@ func (d *DB) GetTorrent(id string) (*TorrentRecord, error) {
 		return nil, errors.NotFoundf("torrent %s not found", id)
 	}
 	if err != nil {
-		return nil, errors.InternalErrorf("failed to get torrent: %w", err)
+		return nil, errors.InternalErrorf("failed to get torrent: %v", err)
 	}
 
 	if completedAt.Valid {
@@ -177,7 +178,7 @@ func (d *DB) ListTorrents() ([]*TorrentRecord, error) {
 
 	rows, err := d.db.Query(query)
 	if err != nil {
-		return nil, errors.InternalErrorf("failed to list torrents: %w", err)
+		return nil, errors.InternalErrorf("failed to list torrents: %v", err)
 	}
 	defer rows.Close()
 
@@ -201,7 +202,7 @@ func (d *DB) ListTorrents() ([]*TorrentRecord, error) {
 			&record.Metadata,
 		)
 		if err != nil {
-			return nil, errors.InternalErrorf("failed to scan torrent: %w", err)
+			return nil, errors.InternalErrorf("failed to scan torrent: %v", err)
 		}
 
 		if completedAt.Valid {
@@ -217,15 +218,15 @@ func (d *DB) ListTorrents() ([]*TorrentRecord, error) {
 // DeleteTorrent deletes a torrent record by ID.
 func (d *DB) DeleteTorrent(id string) error {
 	query := `DELETE FROM torrents WHERE id = ?`
-	
+
 	result, err := d.db.Exec(query, id)
 	if err != nil {
-		return errors.InternalErrorf("failed to delete torrent: %w", err)
+		return errors.InternalErrorf("failed to delete torrent: %v", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return errors.InternalErrorf("failed to get rows affected: %w", err)
+		return errors.InternalErrorf("failed to get rows affected: %v", err)
 	}
 
 	if rows == 0 {
@@ -245,12 +246,12 @@ func (d *DB) UpdateTorrentProgress(id string, progress float64, downloaded, uplo
 
 	result, err := d.db.Exec(query, progress, downloaded, uploaded, id)
 	if err != nil {
-		return errors.InternalErrorf("failed to update torrent progress: %w", err)
+		return errors.InternalErrorf("failed to update torrent progress: %v", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return errors.InternalErrorf("failed to get rows affected: %w", err)
+		return errors.InternalErrorf("failed to get rows affected: %v", err)
 	}
 
 	if rows == 0 {
@@ -270,12 +271,12 @@ func (d *DB) UpdateTorrentStatus(id string, status string) error {
 
 	result, err := d.db.Exec(query, status, id)
 	if err != nil {
-		return errors.InternalErrorf("failed to update torrent status: %w", err)
+		return errors.InternalErrorf("failed to update torrent status: %v", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return errors.InternalErrorf("failed to get rows affected: %w", err)
+		return errors.InternalErrorf("failed to get rows affected: %v", err)
 	}
 
 	if rows == 0 {
@@ -295,12 +296,12 @@ func (d *DB) MarkTorrentCompleted(id string) error {
 
 	result, err := d.db.Exec(query, id)
 	if err != nil {
-		return errors.InternalErrorf("failed to mark torrent completed: %w", err)
+		return errors.InternalErrorf("failed to mark torrent completed: %v", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return errors.InternalErrorf("failed to get rows affected: %w", err)
+		return errors.InternalErrorf("failed to get rows affected: %v", err)
 	}
 
 	if rows == 0 {
@@ -319,7 +320,7 @@ func (d *DB) SaveSetting(key, value string) error {
 
 	_, err := d.db.Exec(query, key, value)
 	if err != nil {
-		return errors.InternalErrorf("failed to save setting: %w", err)
+		return errors.InternalErrorf("failed to save setting: %v", err)
 	}
 
 	return nil
@@ -335,7 +336,7 @@ func (d *DB) GetSetting(key string) (string, error) {
 		return "", errors.NotFoundf("setting %s not found", key)
 	}
 	if err != nil {
-		return "", errors.InternalErrorf("failed to get setting: %w", err)
+		return "", errors.InternalErrorf("failed to get setting: %v", err)
 	}
 
 	return value, nil
@@ -347,7 +348,7 @@ func (d *DB) GetAllSettings() (map[string]string, error) {
 
 	rows, err := d.db.Query(query)
 	if err != nil {
-		return nil, errors.InternalErrorf("failed to get all settings: %w", err)
+		return nil, errors.InternalErrorf("failed to get all settings: %v", err)
 	}
 	defer rows.Close()
 
@@ -355,7 +356,7 @@ func (d *DB) GetAllSettings() (map[string]string, error) {
 	for rows.Next() {
 		var key, value string
 		if err := rows.Scan(&key, &value); err != nil {
-			return nil, errors.InternalErrorf("failed to scan setting: %w", err)
+			return nil, errors.InternalErrorf("failed to scan setting: %v", err)
 		}
 		settings[key] = value
 	}
@@ -367,7 +368,7 @@ func (d *DB) GetAllSettings() (map[string]string, error) {
 func (d *DB) SaveSettingsJSON(settings interface{}) error {
 	data, err := json.Marshal(settings)
 	if err != nil {
-		return errors.InternalErrorf("failed to marshal settings: %w", err)
+		return errors.InternalErrorf("failed to marshal settings: %v", err)
 	}
 
 	return d.SaveSetting("app_settings", string(data))
@@ -384,7 +385,7 @@ func (d *DB) GetSettingsJSON(settings interface{}) error {
 	}
 
 	if err := json.Unmarshal([]byte(data), settings); err != nil {
-		return errors.InternalErrorf("failed to unmarshal settings: %w", err)
+		return errors.InternalErrorf("failed to unmarshal settings: %v", err)
 	}
 
 	return nil

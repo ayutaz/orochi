@@ -312,9 +312,21 @@ func (t *Torrent) SetFilePriority(fileIndex int, priority int) error {
 	if fileIndex < 0 || fileIndex >= len(files) {
 		return errors.InvalidInputf("file index %d out of range", fileIndex)
 	}
-	
+
 	// Set priority: 0 = don't download, 1 = normal, 2 = high
-	files[fileIndex].SetPriority(priority)
+	// Convert int to PiecePriority type
+	var piecePrio torrent.PiecePriority
+	switch priority {
+	case 0:
+		piecePrio = torrent.PiecePriorityNone
+	case 1:
+		piecePrio = torrent.PiecePriorityNormal
+	case 2:
+		piecePrio = torrent.PiecePriorityHigh
+	default:
+		piecePrio = torrent.PiecePriorityNormal
+	}
+	files[fileIndex].SetPriority(piecePrio)
 	return nil
 }
 

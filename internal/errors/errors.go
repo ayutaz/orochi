@@ -133,3 +133,24 @@ func IsParseError(err error) bool {
 	e, ok := err.(*AppError)
 	return ok && e.Code == ErrCodeParseError
 }
+
+// AlreadyExistsf creates a new CONFLICT error with formatting.
+func AlreadyExistsf(format string, args ...interface{}) *AppError {
+	return &AppError{Code: ErrCodeConflict, Message: fmt.Sprintf(format, args...)}
+}
+
+// InternalErrorf creates a new INTERNAL_ERROR error with formatting.
+func InternalErrorf(format string, args ...interface{}) *AppError {
+	return &AppError{Code: ErrCodeInternal, Message: fmt.Sprintf(format, args...)}
+}
+
+// AuthenticationFailedf creates a new UNAUTHORIZED error with formatting.
+func AuthenticationFailedf(format string, args ...interface{}) *AppError {
+	return &AppError{Code: ErrCodeUnauthorized, Message: fmt.Sprintf(format, args...)}
+}
+
+// IsAuthenticationFailed checks if an error is an UNAUTHORIZED error.
+func IsAuthenticationFailed(err error) bool {
+	e, ok := err.(*AppError)
+	return ok && e.Code == ErrCodeUnauthorized
+}

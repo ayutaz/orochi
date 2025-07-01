@@ -16,7 +16,7 @@ func createUpgrader(allowedOrigins []string) websocket.Upgrader {
 			if len(allowedOrigins) == 0 {
 				return true
 			}
-			
+
 			// Check if request origin is in allowed list
 			origin := r.Header.Get("Origin")
 			for _, allowed := range allowedOrigins {
@@ -24,7 +24,7 @@ func createUpgrader(allowedOrigins []string) websocket.Upgrader {
 					return true
 				}
 			}
-			
+
 			return false
 		},
 	}

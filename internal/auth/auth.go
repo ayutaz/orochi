@@ -60,7 +60,7 @@ func (m *Manager) CreateUser(username, password string) error {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.InternalErrorf("failed to hash password: %w", err)
+		return errors.InternalErrorf("failed to hash password: %v", err)
 	}
 
 	m.users[username] = &User{
@@ -155,7 +155,7 @@ func generateToken() (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
-		return "", errors.InternalErrorf("failed to generate token: %w", err)
+		return "", errors.InternalErrorf("failed to generate token: %v", err)
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
 }

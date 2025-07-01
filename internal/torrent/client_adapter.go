@@ -8,16 +8,17 @@ import (
 
 	"github.com/ayutaz/orochi/internal/config"
 	"github.com/ayutaz/orochi/internal/database"
+	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/ayutaz/orochi/internal/logger"
 	torrentclient "github.com/ayutaz/orochi/internal/torrent_client"
 )
 
 // ClientAdapter adapts torrent_client.Client to the Manager interface.
 type ClientAdapter struct {
-	client   *torrentclient.Client
-	logger   logger.Logger
-	db       *database.DB
-	updater  *ProgressUpdater
+	client  *torrentclient.Client
+	logger  logger.Logger
+	db      *database.DB
+	updater *ProgressUpdater
 }
 
 // NewClientAdapter creates a new adapter for the torrent client.
@@ -142,7 +143,7 @@ func (a *ClientAdapter) GetTorrent(id string) (*Torrent, bool) {
 
 	// Get stats for upload data
 	stats := torr.GetStats()
-	
+
 	// Convert to our Torrent struct
 	return &Torrent{
 		ID:           torr.InfoHash(),
@@ -220,13 +221,13 @@ func (a *ClientAdapter) RemoveTorrent(id string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Remove from database
 	if err := a.db.DeleteTorrent(id); err != nil {
 		a.logger.Error("failed to delete torrent from database", logger.Err(err))
 		// Don't fail the operation, just log the error
 	}
-	
+
 	return torr.Remove()
 }
 
@@ -261,12 +262,12 @@ func (a *ClientAdapter) Close() error {
 	if a.updater != nil {
 		a.updater.Stop()
 	}
-	
+
 	// Close database
 	if a.db != nil {
 		_ = a.db.Close()
 	}
-	
+
 	return a.client.Close()
 }
 
