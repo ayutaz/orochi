@@ -1,7 +1,6 @@
 package network
 
 import (
-	"net"
 	"testing"
 )
 
@@ -30,9 +29,9 @@ func TestVPNBinding(t *testing.T) {
 
 	t.Run("IsVPNInterface", func(t *testing.T) {
 		tests := []struct {
-			name     string
+			name      string
 			ifaceName string
-			expected bool
+			expected  bool
 		}{
 			{"TAP interface", "tap0", true},
 			{"TUN interface", "tun0", true},
@@ -74,7 +73,7 @@ func TestVPNBinding(t *testing.T) {
 	t.Run("BindToInterface", func(t *testing.T) {
 		// This test requires root privileges and an actual interface
 		// So we'll test error handling instead
-		
+
 		// Test with invalid interface name
 		err := BindToInterface("nonexistent-interface")
 		if err == nil {
@@ -92,15 +91,15 @@ func TestVPNBinding(t *testing.T) {
 func TestVPNConfig(t *testing.T) {
 	t.Run("NewVPNConfig", func(t *testing.T) {
 		config := NewVPNConfig()
-		
+
 		if config.Enabled {
 			t.Error("VPN should be disabled by default")
 		}
-		
+
 		if config.InterfaceName != "" {
 			t.Error("Interface name should be empty by default")
 		}
-		
+
 		if !config.KillSwitch {
 			t.Error("Kill switch should be enabled by default for safety")
 		}
@@ -155,17 +154,17 @@ func TestNetworkMonitor(t *testing.T) {
 			InterfaceName: "tun0",
 			KillSwitch:    true,
 		}
-		
+
 		monitor := NewNetworkMonitor(config)
-		
+
 		if monitor == nil {
 			t.Fatal("NewNetworkMonitor returned nil")
 		}
-		
+
 		if monitor.config != config {
 			t.Error("Config not set correctly")
 		}
-		
+
 		if monitor.checkInterval == 0 {
 			t.Error("Check interval not set")
 		}
@@ -176,35 +175,24 @@ func TestNetworkMonitor(t *testing.T) {
 			Enabled:       false,
 			InterfaceName: "",
 		}
-		
+
 		monitor := NewNetworkMonitor(config)
-		
+
 		// When VPN is disabled, should always return true
 		if !monitor.IsVPNActive() {
 			t.Error("IsVPNActive should return true when VPN is disabled")
 		}
-		
+
 		// Enable VPN binding
 		config.Enabled = true
 		config.InterfaceName = "nonexistent-vpn"
-		
+
 		// Create new monitor with updated config
 		monitor2 := NewNetworkMonitor(config)
-		
+
 		// Should return false for non-existent interface
 		if monitor2.IsVPNActive() {
 			t.Error("IsVPNActive should return false for non-existent interface")
 		}
 	})
-}
-
-// Helper function to check if running with sufficient privileges
-func hasPrivileges() bool {
-	// Try to create a raw socket (requires privileges)
-	conn, err := net.Dial("ip4:icmp", "127.0.0.1")
-	if err != nil {
-		return false
-	}
-	conn.Close()
-	return true
 }

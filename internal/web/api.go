@@ -377,12 +377,12 @@ func (s *Server) handleUpdateFiles(w http.ResponseWriter, r *http.Request) {
 
 // VPNStatusResponse represents VPN status in API responses.
 type VPNStatusResponse struct {
-	Enabled       bool                       `json:"enabled"`
-	Active        bool                       `json:"active"`
-	InterfaceName string                     `json:"interface_name"`
-	KillSwitch    bool                       `json:"kill_switch"`
-	LastCheck     string                     `json:"last_check,omitempty"`
-	Interfaces    []network.NetworkInterface `json:"interfaces"`
+	Enabled       bool                `json:"enabled"`
+	Active        bool                `json:"active"`
+	InterfaceName string              `json:"interface_name"`
+	KillSwitch    bool                `json:"kill_switch"`
+	LastCheck     string              `json:"last_check,omitempty"`
+	Interfaces    []network.Interface `json:"interfaces"`
 }
 
 // handleGetVPNStatus handles GET /api/vpn/status.
@@ -397,7 +397,7 @@ func (s *Server) handleGetVPNStatus(w http.ResponseWriter, _ *http.Request) {
 	interfaces, err := network.GetNetworkInterfaces()
 	if err != nil {
 		s.logger.Error("failed to get network interfaces", logger.Err(err))
-		interfaces = []network.NetworkInterface{}
+		interfaces = []network.Interface{}
 	}
 
 	response := VPNStatusResponse{
@@ -413,7 +413,7 @@ func (s *Server) handleGetVPNStatus(w http.ResponseWriter, _ *http.Request) {
 		if client, err := adapter.GetClient(); err == nil && client != nil {
 			// Access network monitor through reflection or add a method
 			response.Active = !vpnConfig.Enabled // If disabled, consider as "active"
-			
+
 			// If enabled, check actual interface status
 			if vpnConfig.Enabled && vpnConfig.InterfaceName != "" {
 				for _, iface := range interfaces {
@@ -446,7 +446,7 @@ func (s *Server) handleUpdateVPNConfig(w http.ResponseWriter, r *http.Request) {
 	if s.config.VPN == nil {
 		s.config.VPN = network.NewVPNConfig()
 	}
-	
+
 	s.config.VPN.Enabled = req.Enabled
 	s.config.VPN.InterfaceName = req.InterfaceName
 	s.config.VPN.KillSwitch = req.KillSwitch

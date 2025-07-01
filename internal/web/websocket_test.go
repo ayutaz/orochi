@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ayutaz/orochi/internal/config"
 	"github.com/ayutaz/orochi/internal/logger"
 )
 
@@ -103,7 +102,7 @@ func TestWebSocketHub(t *testing.T) {
 
 		// Send broadcast
 		hub.BroadcastTorrentUpdate()
-		
+
 		// Give time for goroutine to process
 		time.Sleep(50 * time.Millisecond)
 	})
@@ -129,20 +128,10 @@ func TestWebSocketHub(t *testing.T) {
 
 		// Send broadcast
 		hub.BroadcastTorrentData(testData)
-		
+
 		// Give time for goroutine to process
 		time.Sleep(50 * time.Millisecond)
 	})
-}
-
-func testConfig() *config.Config {
-	return &config.Config{
-		Port:        8080,
-		DownloadDir: "./test-downloads",
-		DataDir:     "./test-data",
-		MaxTorrents: 5,
-		MaxPeers:    200,
-	}
 }
 
 func TestWebSocketConnection(t *testing.T) {

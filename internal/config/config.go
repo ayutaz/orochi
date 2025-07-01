@@ -17,14 +17,14 @@ var (
 
 // Config represents the application configuration.
 type Config struct {
-	Port           int                  `json:"port"`
-	DownloadDir    string               `json:"download_dir"`
-	MaxTorrents    int                  `json:"max_torrents"`
-	MaxPeers       int                  `json:"max_peers"`
-	VPNInterface   string               `json:"vpn_interface,omitempty"` // Deprecated: use VPN.InterfaceName
-	DataDir        string               `json:"data_dir,omitempty"`
-	AllowedOrigins []string             `json:"allowed_origins,omitempty"`
-	VPN            *network.VPNConfig   `json:"vpn,omitempty"`
+	Port           int                `json:"port"`
+	DownloadDir    string             `json:"download_dir"`
+	MaxTorrents    int                `json:"max_torrents"`
+	MaxPeers       int                `json:"max_peers"`
+	VPNInterface   string             `json:"vpn_interface,omitempty"` // Deprecated: use VPN.InterfaceName
+	DataDir        string             `json:"data_dir,omitempty"`
+	AllowedOrigins []string           `json:"allowed_origins,omitempty"`
+	VPN            *network.VPNConfig `json:"vpn,omitempty"`
 }
 
 // LoadDefault returns the default configuration.

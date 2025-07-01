@@ -18,8 +18,8 @@ type VPNConfig struct {
 	KillSwitch    bool   `json:"kill_switch"`
 }
 
-// NetworkInterface represents a network interface.
-type NetworkInterface struct {
+// Interface represents a network interface.
+type Interface struct {
 	Name      string   `json:"name"`
 	Index     int      `json:"index"`
 	Addresses []string `json:"addresses"`
@@ -27,8 +27,8 @@ type NetworkInterface struct {
 	IsUp      bool     `json:"is_up"`
 }
 
-// NetworkMonitor monitors network interfaces and VPN status.
-type NetworkMonitor struct {
+// Monitor monitors network interfaces and VPN status.
+type Monitor struct {
 	config        *VPNConfig
 	logger        logger.Logger
 	checkInterval time.Duration
@@ -55,15 +55,15 @@ func (c *VPNConfig) Validate() error {
 }
 
 // GetNetworkInterfaces returns all network interfaces.
-func GetNetworkInterfaces() ([]NetworkInterface, error) {
+func GetNetworkInterfaces() ([]Interface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get network interfaces: %w", err)
 	}
 
-	var result []NetworkInterface
+	var result []Interface
 	for _, iface := range interfaces {
-		ni := NetworkInterface{
+		ni := Interface{
 			Name:  iface.Name,
 			Index: iface.Index,
 			IsVPN: IsVPNInterface(iface.Name),
@@ -88,15 +88,15 @@ func GetNetworkInterfaces() ([]NetworkInterface, error) {
 func IsVPNInterface(name string) bool {
 	// Common VPN interface prefixes
 	vpnPrefixes := []string{
-		"tun",     // OpenVPN, WireGuard
-		"tap",     // OpenVPN
-		"wg",      // WireGuard
-		"ppp",     // PPTP, L2TP
-		"ipsec",   // IPSec
-		"vpn",     // Generic VPN
+		"tun",      // OpenVPN, WireGuard
+		"tap",      // OpenVPN
+		"wg",       // WireGuard
+		"ppp",      // PPTP, L2TP
+		"ipsec",    // IPSec
+		"vpn",      // Generic VPN
 		"nordlynx", // NordVPN
-		"proton",  // ProtonVPN
-		"mullvad", // Mullvad
+		"proton",   // ProtonVPN
+		"mullvad",  // Mullvad
 	}
 
 	lowerName := strings.ToLower(name)
@@ -110,13 +110,13 @@ func IsVPNInterface(name string) bool {
 }
 
 // GetVPNInterfaces returns only VPN interfaces.
-func GetVPNInterfaces() ([]NetworkInterface, error) {
+func GetVPNInterfaces() ([]Interface, error) {
 	interfaces, err := GetNetworkInterfaces()
 	if err != nil {
 		return nil, err
 	}
 
-	var vpnInterfaces []NetworkInterface
+	var vpnInterfaces []Interface
 	for _, iface := range interfaces {
 		if iface.IsVPN {
 			vpnInterfaces = append(vpnInterfaces, iface)
@@ -150,8 +150,8 @@ func BindToInterface(interfaceName string) error {
 }
 
 // NewNetworkMonitor creates a new network monitor.
-func NewNetworkMonitor(config *VPNConfig) *NetworkMonitor {
-	monitor := &NetworkMonitor{
+func NewNetworkMonitor(config *VPNConfig) *Monitor {
+	monitor := &Monitor{
 		config:        config,
 		checkInterval: 5 * time.Second,
 		stopCh:        make(chan struct{}),
@@ -162,22 +162,22 @@ func NewNetworkMonitor(config *VPNConfig) *NetworkMonitor {
 }
 
 // SetLogger sets the logger for the network monitor.
-func (m *NetworkMonitor) SetLogger(log logger.Logger) {
+func (m *Monitor) SetLogger(log logger.Logger) {
 	m.logger = log
 }
 
 // Start starts monitoring network interfaces.
-func (m *NetworkMonitor) Start() {
+func (m *Monitor) Start() {
 	go m.run()
 }
 
 // Stop stops the network monitor.
-func (m *NetworkMonitor) Stop() {
+func (m *Monitor) Stop() {
 	close(m.stopCh)
 }
 
 // run is the main monitoring loop.
-func (m *NetworkMonitor) run() {
+func (m *Monitor) run() {
 	ticker := time.NewTicker(m.checkInterval)
 	defer ticker.Stop()
 
@@ -195,7 +195,7 @@ func (m *NetworkMonitor) run() {
 }
 
 // checkVPNStatus checks if the VPN interface is active.
-func (m *NetworkMonitor) checkVPNStatus() {
+func (m *Monitor) checkVPNStatus() {
 	if !m.config.Enabled {
 		m.setVPNActive(true) // VPN check disabled, always "active"
 		return
@@ -225,32 +225,32 @@ func (m *NetworkMonitor) checkVPNStatus() {
 }
 
 // setVPNActive updates the VPN active status.
-func (m *NetworkMonitor) setVPNActive(active bool) {
+func (m *Monitor) setVPNActive(active bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	m.vpnActive = active
 	m.lastCheck = time.Now()
 }
 
 // IsVPNActive returns whether the VPN is currently active.
-func (m *NetworkMonitor) IsVPNActive() bool {
+func (m *Monitor) IsVPNActive() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	return m.vpnActive
 }
 
 // GetLastCheck returns the time of the last VPN check.
-func (m *NetworkMonitor) GetLastCheck() time.Time {
+func (m *Monitor) GetLastCheck() time.Time {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	return m.lastCheck
 }
 
 // ShouldAllowConnection checks if a connection should be allowed based on VPN status.
-func (m *NetworkMonitor) ShouldAllowConnection() bool {
+func (m *Monitor) ShouldAllowConnection() bool {
 	if !m.config.Enabled {
 		return true // VPN binding disabled, allow all
 	}

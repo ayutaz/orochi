@@ -21,7 +21,7 @@ type Client struct {
 	client         *torrent.Client
 	logger         logger.Logger
 	config         *config.Config
-	networkMonitor *network.NetworkMonitor
+	networkMonitor *network.Monitor
 }
 
 // NewClient creates a new torrent client.
@@ -53,7 +53,7 @@ func NewClient(cfg *config.Config, log logger.Logger) (*Client, error) {
 		client.networkMonitor = network.NewNetworkMonitor(cfg.VPN)
 		client.networkMonitor.SetLogger(log)
 		client.networkMonitor.Start()
-		
+
 		log.Info("VPN binding enabled",
 			logger.String("interface", cfg.VPN.InterfaceName),
 			logger.Bool("kill_switch", cfg.VPN.KillSwitch),
@@ -181,13 +181,13 @@ func (c *Client) Close() error {
 	if c.networkMonitor != nil {
 		c.networkMonitor.Stop()
 	}
-	
+
 	c.client.Close()
 	return nil
 }
 
 // GetNetworkMonitor returns the network monitor if available.
-func (c *Client) GetNetworkMonitor() *network.NetworkMonitor {
+func (c *Client) GetNetworkMonitor() *network.Monitor {
 	return c.networkMonitor
 }
 
