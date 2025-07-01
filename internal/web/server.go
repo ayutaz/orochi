@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"github.com/ayutaz/orochi/internal/config"
+	"github.com/ayutaz/orochi/internal/torrent"
 )
 
 // Server represents the HTTP server.
 type Server struct {
-	config     *config.Config
-	httpServer *http.Server
-	mux        *http.ServeMux
+	config         *config.Config
+	httpServer     *http.Server
+	mux            *http.ServeMux
+	torrentManager *torrent.Manager
 }
 
 // NewServer creates a new HTTP server.
@@ -38,9 +40,22 @@ func NewServer(cfg *config.Config) *Server {
 	return s
 }
 
+// SetTorrentManager sets the torrent manager for the server.
+func (s *Server) SetTorrentManager(tm *torrent.Manager) {
+	s.torrentManager = tm
+}
+
 // setupRoutes configures all HTTP routes.
 func (s *Server) setupRoutes() {
+	// Health check
 	s.mux.HandleFunc("/health", s.handleHealth)
+	
+	// API routes
+	s.mux.HandleFunc("/api/torrents", s.handleAPITorrents)
+	s.mux.HandleFunc("/api/torrents/", s.handleAPITorrent)
+	s.mux.HandleFunc("/api/torrents/magnet", s.handleAPITorrentMagnet)
+	
+	// Web UI
 	s.mux.HandleFunc("/", s.handleHome)
 }
 
@@ -69,24 +84,13 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 // handleHome handles the home page.
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
-	// Strict path matching - only serve home page for exact "/" path
+	// Serve static files
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		// Try to serve static files
+		http.FileServer(http.Dir("web")).ServeHTTP(w, r)
 		return
 	}
 	
-	// For now, just return a simple message
-	// Later this will serve the actual UI
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, `<!DOCTYPE html>
-<html>
-<head>
-    <title>Orochi - Simple Torrent Client</title>
-</head>
-<body>
-    <h1>Orochi</h1>
-    <p>Simple Torrent Client</p>
-</body>
-</html>`)
+	// Serve index.html for root path
+	http.ServeFile(w, r, "web/templates/index.html")
 }

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orochi - Simple Torrent Client</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>Orochi</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="actions">
+            <button class="btn" onclick="showAddTorrentModal()">トレントを追加</button>
+            <button class="btn btn-secondary" onclick="showAddMagnetModal()">マグネットリンクを追加</button>
+        </div>
+
+        <div id="torrent-list" class="torrent-list">
+            <div class="empty-state">
+                <h2>トレントがありません</h2>
+                <p>上のボタンからトレントを追加してください</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Torrent Modal -->
+    <div id="add-torrent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>トレントファイルを追加</h2>
+            </div>
+            <div class="modal-body">
+                <form id="add-torrent-form">
+                    <div class="form-group">
+                        <label for="torrent-file">トレントファイル</label>
+                        <input type="file" id="torrent-file" accept=".torrent" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideModal('add-torrent-modal')">キャンセル</button>
+                <button class="btn" onclick="addTorrentFile()">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Magnet Modal -->
+    <div id="add-magnet-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>マグネットリンクを追加</h2>
+            </div>
+            <div class="modal-body">
+                <form id="add-magnet-form">
+                    <div class="form-group">
+                        <label for="magnet-link">マグネットリンク</label>
+                        <textarea id="magnet-link" rows="3" placeholder="magnet:?xt=urn:btih:..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideModal('add-magnet-modal')">キャンセル</button>
+                <button class="btn" onclick="addMagnetLink()">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
