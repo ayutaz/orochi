@@ -119,3 +119,12 @@ jobs:
           ./orochi --version
         fi
       shell: bash
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: orochi-${{ matrix.os }}
+        path: |
+          orochi*
+          !orochi*.go
+        retention-days: 7
