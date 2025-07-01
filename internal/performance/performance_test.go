@@ -307,7 +307,7 @@ func TestMemoryUsage(t *testing.T) {
 
 		// Remove all torrents
 		for _, id := range ids {
-			_, _ = manager.RemoveTorrent(id)
+			_ = manager.RemoveTorrent(id)
 		}
 
 		// Check count is back to 0
