@@ -9,7 +9,7 @@ import (
 )
 
 // handleAPIDocs serves the Swagger UI page.
-func (s *Server) handleAPIDocs(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleAPIDocs(w http.ResponseWriter, _ *http.Request) {
 	apiFS, err := GetAPIDocsFS()
 	if err != nil {
 		s.logger.Error("failed to get API docs filesystem", logger.Err(err))

@@ -27,8 +27,12 @@ coverage:
 
 # Run linter
 lint:
-	@which golangci-lint > /dev/null || which ~/go/bin/golangci-lint > /dev/null || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
-	@(golangci-lint run 2>/dev/null || ~/go/bin/golangci-lint run)
+	@if ! command -v golangci-lint > /dev/null; then \
+		echo "Installing golangci-lint v1.62.2 (same as CI)..."; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.62.2; \
+	fi
+	@golangci-lint version
+	@golangci-lint run
 
 # Run tests in watch mode
 test-watch:
@@ -60,8 +64,12 @@ build-all:
 
 # Install development tools
 dev-tools:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install gotest.tools/gotestsum@latest
+	@echo "Installing golangci-lint v1.62.2 (same as CI)..."
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.62.2
+	@go install gotest.tools/gotestsum@latest
+	@echo "Installing pre-commit..."
+	@pip install pre-commit || pip3 install pre-commit
+	@pre-commit install
 
 # Install UI dependencies
 ui-install:
