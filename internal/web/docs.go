@@ -11,7 +11,7 @@ import (
 func (s *Server) handleAPIDocs(w http.ResponseWriter, r *http.Request) {
 	// Serve the swagger.html file
 	apiDocsPath := filepath.Join("api", "swagger.html")
-	
+
 	// Check if file exists
 	if _, err := os.Stat(apiDocsPath); os.IsNotExist(err) {
 		http.Error(w, "API documentation not found", http.StatusNotFound)
