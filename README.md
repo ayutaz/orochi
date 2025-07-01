@@ -1,14 +1,24 @@
-# Orochi - Simple Torrent Client
+# Orochi - Modern BitTorrent Client
 
-A simple, cross-platform torrent client written in Go, inspired by BitThief's simplicity.
+[![CI](https://github.com/ayutaz/orochi/actions/workflows/ci.yml/badge.svg)](https://github.com/ayutaz/orochi/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ayutaz/orochi)](https://goreportcard.com/report/github.com/ayutaz/orochi)
+[![Release](https://img.shields.io/github/release/ayutaz/orochi.svg)](https://github.com/ayutaz/orochi/releases/latest)
+
+A modern, secure, and user-friendly BitTorrent client with a beautiful web interface, written in Go and React.
 
 ## Features
 
-- 🚀 Simple and intuitive web-based UI
-- 🔒 Security-first design with VPN binding support
-- 📦 Single binary distribution (no dependencies)
-- 🌍 Cross-platform: Windows, macOS, Linux
-- 🎯 Focused on legal torrent usage (Linux ISOs, open-source software)
+- 🚀 **Modern Web UI** - Beautiful, responsive interface built with React and Material-UI
+- 🔄 **Real-time Updates** - Live progress tracking via WebSocket
+- 🎯 **Smart File Selection** - Choose which files to download within torrents
+- 🌍 **Cross-platform** - Works on Windows, macOS, and Linux
+- 🔒 **Security First** - VPN binding, kill switch, and authentication support
+- 📦 **Single Binary** - No dependencies, easy deployment
+- 🌓 **Dark Mode** - Easy on the eyes during late-night downloads
+- 🌐 **Multi-language** - Support for English and Japanese
+- 📊 **Comprehensive API** - RESTful API with OpenAPI documentation
+- ⚡ **High Performance** - Efficient concurrent downloads with piece prioritization
 
 ## Installation
 
@@ -18,21 +28,57 @@ Download the latest release for your platform from the [releases page](https://g
 
 ### From Source
 
+Requirements:
+- Go 1.23 or later
+- Node.js 20 or later (for building the web UI)
+
 ```bash
 git clone https://github.com/ayutaz/orochi.git
 cd orochi
 make build
 ```
 
-## Usage
-
-Simply run the binary:
+## Quick Start
 
 ```bash
+# Start with default settings
 ./orochi
+
+# Start on a different port
+./orochi --port 9000
+
+# Specify download directory
+./orochi --download-dir /path/to/downloads
+
+# Show version information
+./orochi --version
 ```
 
-Then open your browser and navigate to `http://localhost:8080`
+Then open http://localhost:8080 in your browser.
+
+### Using Real BitTorrent Mode
+
+By default, Orochi runs in stub mode for testing. To use actual BitTorrent functionality:
+
+```bash
+./orochi --real
+```
+
+⚠️ **Legal Notice**: Only download and share content you have the legal right to access.
+
+## Configuration
+
+Orochi can be configured through:
+- Command-line flags
+- Web interface settings
+- Configuration file (auto-created on first run)
+
+Key settings:
+- **Download Directory**: Where to save downloaded files
+- **Port**: BitTorrent listen port (default: 6881)
+- **Max Connections**: Maximum peer connections
+- **Speed Limits**: Upload/download speed restrictions
+- **VPN Binding**: Restrict traffic to specific network interface
 
 ## Development
 
@@ -40,7 +86,7 @@ This project follows Test-Driven Development (TDD) principles.
 
 ### Prerequisites
 
-- Go 1.21 or higher
+- Go 1.23 or higher
 - Make (optional)
 
 ### Running Tests
