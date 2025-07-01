@@ -1,0 +1,168 @@
+name: Binary Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and Test Binary on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary_name: orochi
+            binary_suffix: ""
+            ldflags: ""
+          - os: windows-latest
+            binary_name: orochi
+            binary_suffix: ".exe"
+            ldflags: ""
+          - os: macos-latest
+            binary_name: orochi
+            binary_suffix: ""
+            ldflags: ""
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    
+    - name: Build UI
+      run: |
+        cd web-ui
+        npm ci
+        npm run build
+    
+    - name: Build binary
+      run: |
+        go build -ldflags="${{ matrix.ldflags }}" -v -o ${{ matrix.binary_name }}${{ matrix.binary_suffix }} ./cmd/orochi
+    
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: orochi-${{ matrix.os }}
+        path: ${{ matrix.binary_name }}${{ matrix.binary_suffix }}
+    
+    # Basic smoke tests
+    - name: Test --version
+      run: |
+        ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --version
+      timeout-minutes: 1
+    
+    - name: Test --help
+      run: |
+        ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --help || true
+      timeout-minutes: 1
+    
+    # Start server and test connectivity
+    - name: Start server in background
+      shell: bash
+      run: |
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          # Windows: Start in background with proper output redirection
+          Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -PassThru | Out-Null
+        else
+          # Unix: Start in background
+          ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --port 9999 > server.log 2>&1 &
+        fi
+        echo "SERVER_PID=$!" >> $GITHUB_ENV
+        # Give server time to start
+        sleep 5
+      timeout-minutes: 2
+    
+    - name: Check server is running
+      shell: bash
+      run: |
+        if command -v curl &> /dev/null; then
+          curl -f http://localhost:9999/api/health || (echo "Server health check failed" && cat server.log && exit 1)
+        else
+          # Windows fallback
+          powershell -Command "Invoke-WebRequest -Uri http://localhost:9999/api/health -UseBasicParsing" || (echo "Server health check failed" && type server.log && exit 1)
+        fi
+      timeout-minutes: 1
+    
+    - name: Stop server
+      if: always()
+      shell: bash
+      run: |
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          # Windows: Kill process
+          powershell -Command "Get-Process -Name '${{ matrix.binary_name }}' -ErrorAction SilentlyContinue | Stop-Process -Force"
+        else
+          # Unix: Kill process
+          if [ ! -z "${SERVER_PID}" ]; then
+            kill $SERVER_PID || true
+          fi
+          pkill -f "${{ matrix.binary_name }}" || true
+        fi
+    
+    - name: Display server logs on failure
+      if: failure()
+      shell: bash
+      run: |
+        echo "=== Server Log ==="
+        cat server.log || type server.log || echo "No server log found"
+        echo "=== Server Error Log ==="
+        cat server_error.log || type server_error.log || echo "No error log found"
+
+  test-downloaded-binaries:
+    name: Test Downloaded Binary on ${{ matrix.os }}
+    needs: build-and-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            download_os: ubuntu-latest
+            binary_name: orochi
+            binary_suffix: ""
+          - os: windows-latest
+            download_os: windows-latest
+            binary_name: orochi
+            binary_suffix: ".exe"
+          - os: macos-latest
+            download_os: macos-latest
+            binary_name: orochi
+            binary_suffix: ""
+    
+    steps:
+    - name: Download binary
+      uses: actions/download-artifact@v4
+      with:
+        name: orochi-${{ matrix.download_os }}
+    
+    - name: Make binary executable (Unix)
+      if: matrix.os != 'windows-latest'
+      run: chmod +x ${{ matrix.binary_name }}${{ matrix.binary_suffix }}
+    
+    - name: Test downloaded binary --version
+      run: |
+        ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --version
+      timeout-minutes: 1
+    
+    - name: Test downloaded binary --help
+      run: |
+        ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --help || true
+      timeout-minutes: 1

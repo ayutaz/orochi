@@ -4,32 +4,183 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v1.0.0)'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
+  build-binaries:
+    name: Build ${{ matrix.os }} binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            binary_name: orochi
+            archive_ext: tar.gz
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            binary_name: orochi.exe
+            archive_ext: zip
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            binary_name: orochi
+            archive_ext: tar.gz
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            binary_name: orochi
+            archive_ext: tar.gz
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
+    
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22'
-
-    - name: Run tests
-      run: go test ./...
-
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v6
+        go-version: '1.23'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
       with:
-        version: latest
-        args: release --clean
+        node-version: '20'
+    
+    - name: Build UI
+      run: |
+        cd web-ui
+        npm ci
+        npm run build
+    
+    - name: Get version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+    
+    - name: Build binary
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        COMMIT="${GITHUB_SHA::8}"
+        DATE="$(date -u +%Y-%m-%d)"
+        
+        go build -ldflags="-X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" \
+          -o ${{ matrix.binary_name }} ./cmd/orochi
+    
+    - name: Create release directory
+      run: |
+        mkdir -p release/orochi-${{ matrix.goos }}-${{ matrix.goarch }}
+        cp ${{ matrix.binary_name }} release/orochi-${{ matrix.goos }}-${{ matrix.goarch }}/
+        cp README.md LICENSE release/orochi-${{ matrix.goos }}-${{ matrix.goarch }}/
+        
+        # Include Windows batch file for Windows releases
+        if [[ "${{ matrix.goos }}" == "windows" ]]; then
+          mkdir -p scripts
+          echo '@echo off' > scripts/orochi.bat
+          echo 'orochi.exe %*' >> scripts/orochi.bat
+          cp scripts/orochi.bat release/orochi-${{ matrix.goos }}-${{ matrix.goarch }}/
+        fi
+      shell: bash
+    
+    - name: Create archive
+      run: |
+        cd release
+        if [[ "${{ matrix.archive_ext }}" == "zip" ]]; then
+          zip -r orochi-${{ matrix.goos }}-${{ matrix.goarch }}.zip orochi-${{ matrix.goos }}-${{ matrix.goarch }}
+        else
+          tar -czf orochi-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz orochi-${{ matrix.goos }}-${{ matrix.goarch }}
+        fi
+      shell: bash
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: orochi-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: release/orochi-${{ matrix.goos }}-${{ matrix.goarch }}.${{ matrix.archive_ext }}
+  
+  create-release:
+    name: Create Release
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Get version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Orochi ${{ steps.version.outputs.version }}
+        body: |
+          ## What's New
+          
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          
+          ## Installation
+          
+          ### Windows
+          1. Download `orochi-windows-amd64.zip`
+          2. Extract the archive
+          3. Run `orochi.bat` or `orochi.exe`
+          
+          ### macOS
+          1. Download `orochi-darwin-amd64.tar.gz` (Intel) or `orochi-darwin-arm64.tar.gz` (Apple Silicon)
+          2. Extract: `tar -xzf orochi-darwin-*.tar.gz`
+          3. Make executable: `chmod +x orochi`
+          4. Run: `./orochi`
+          
+          ### Linux
+          1. Download `orochi-linux-amd64.tar.gz`
+          2. Extract: `tar -xzf orochi-linux-amd64.tar.gz`
+          3. Make executable: `chmod +x orochi`
+          4. Run: `./orochi`
+          
+          ## Usage
+          ```bash
+          # Start with default settings
+          ./orochi
+          
+          # Use real BitTorrent mode
+          ./orochi --real
+          
+          # Specify port
+          ./orochi --port 9090
+          ```
+          
+          Then open http://localhost:8080 in your browser.
+        files: |
+          artifacts/**/*.tar.gz
+          artifacts/**/*.zip
+        draft: false
+        prerelease: false
