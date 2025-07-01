@@ -1,9 +1,6 @@
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
-    - vendor
-    - test/integration
 
 linters:
   enable:
@@ -26,7 +23,7 @@ linters:
     - gocognit
     - godot
     - godox
-    - goerr113
+    - err113
     - gofumpt
     - gomodguard
     - goprintffuncname
@@ -56,7 +53,6 @@ linters:
     - nlreturn
     - paralleltest
     - tparallel
-    - ifshort
     - rowserrcheck
     - sqlclosecheck
     - wastedassign
@@ -64,18 +60,14 @@ linters:
     - tagliatelle
     - promlinter
     - importas
-    - exportloopref
-    - gomnd
 
 linters-settings:
   gofmt:
     simplify: true
   goimports:
     local-prefixes: github.com/ayutaz/orochi
-  golint:
-    min-confidence: 0.8
   govet:
-    check-shadowing: true
+    enable-all: true
   lll:
     line-length: 120
   errcheck:
@@ -99,3 +91,9 @@ issues:
         - dupl
         - gosec
         - goconst
+    - path: vendor
+      linters:
+        - all
+    - path: test/integration
+      linters:
+        - all

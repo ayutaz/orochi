@@ -101,6 +101,7 @@ func BenchmarkTorrentManager(b *testing.B) {
 }
 
 func benchmarkManagerOperations(b *testing.B, manager torrent.Manager) {
+	b.Helper()
 	// Pre-populate with some torrents
 	for i := 0; i < 100; i++ {
 		magnet := fmt.Sprintf("magnet:?xt=urn:btih:%040d&dn=test%d.txt", i, i)

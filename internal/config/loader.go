@@ -117,7 +117,7 @@ func SaveConfig(config *Config, path string) error {
 	}
 	
 	// Write to file
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0600)
 }
 
 // getHomeDir returns the user's home directory

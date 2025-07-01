@@ -138,7 +138,9 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(indexHTML)
+	if _, err := w.Write(indexHTML); err != nil {
+		s.logger.Error("failed to write response", logger.Err(err))
+	}
 }
 
 // handleStatic handles static file requests
@@ -194,5 +196,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	// Return metrics snapshot
 	snapshot := m.Snapshot()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(snapshot)
+	if err := json.NewEncoder(w).Encode(snapshot); err != nil {
+		s.logger.Error("failed to encode metrics", logger.Err(err))
+	}
 }

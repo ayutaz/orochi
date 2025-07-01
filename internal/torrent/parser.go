@@ -1,7 +1,7 @@
 package torrent
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // SHA1 is required by BitTorrent protocol for info hash
 	"encoding/hex"
 	"net/url"
 	"strconv"
@@ -71,7 +71,7 @@ func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 		return nil, errors.InternalWithError("failed to encode info dict", err)
 	}
 	
-	h := sha1.New()
+	h := sha1.New() //nolint:gosec // SHA1 is required by BitTorrent protocol
 	h.Write(infoBencode)
 	infoHash := hex.EncodeToString(h.Sum(nil))
 	

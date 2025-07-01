@@ -171,7 +171,10 @@ func TestMetrics_Snapshot(t *testing.T) {
 	snapshot := m.Snapshot()
 	
 	// Check torrent metrics
-	torrents := snapshot["torrents"].(map[string]int64)
+	torrents, ok := snapshot["torrents"].(map[string]int64)
+	if !ok {
+		t.Fatal("torrents not found in snapshot")
+	}
 	if torrents["total"] != 5 {
 		t.Errorf("expected total 5, got %d", torrents["total"])
 	}
@@ -180,24 +183,45 @@ func TestMetrics_Snapshot(t *testing.T) {
 	}
 	
 	// Check transfer metrics
-	transfer := snapshot["transfer"].(map[string]int64)
+	transfer, ok := snapshot["transfer"].(map[string]int64)
+	if !ok {
+		t.Fatal("transfer not found in snapshot")
+	}
 	if transfer["downloaded"] != 1024*1024 {
 		t.Errorf("expected downloaded %d, got %d", 1024*1024, transfer["downloaded"])
 	}
 	
 	// Check HTTP metrics
-	http := snapshot["http"].(map[string]interface{})
-	if http["requests"].(int64) != 100 {
+	http, ok := snapshot["http"].(map[string]interface{})
+	if !ok {
+		t.Fatal("http not found in snapshot")
+	}
+	req, ok := http["requests"].(int64)
+	if !ok {
+		t.Fatal("requests not found in http")
+	}
+	if req != 100 {
 		t.Errorf("expected requests 100, got %d", http["requests"])
 	}
 	
 	// Check system metrics
-	system := snapshot["system"].(map[string]interface{})
-	if system["memory_bytes"].(int64) != 64*1024*1024 {
-		t.Errorf("expected memory_bytes %d, got %d", 64*1024*1024, system["memory_bytes"])
+	system, ok := snapshot["system"].(map[string]interface{})
+	if !ok {
+		t.Fatal("system not found in snapshot")
 	}
-	if system["goroutines"].(int32) != 50 {
-		t.Errorf("expected goroutines 50, got %d", system["goroutines"])
+	mem, ok := system["memory_bytes"].(int64)
+	if !ok {
+		t.Fatal("memory_bytes not found in system")
+	}
+	if mem != 64*1024*1024 {
+		t.Errorf("expected memory_bytes %d, got %d", 64*1024*1024, mem)
+	}
+	gor, ok := system["goroutines"].(int32)
+	if !ok {
+		t.Fatal("goroutines not found in system")
+	}
+	if gor != 50 {
+		t.Errorf("expected goroutines 50, got %d", gor)
 	}
 }
 
