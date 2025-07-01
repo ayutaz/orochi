@@ -7,25 +7,25 @@ import (
 	"github.com/ayutaz/orochi/internal/errors"
 )
 
-// TorrentStatus represents the status of a torrent.
-type TorrentStatus string
+// Status represents the status of a torrent.
+type Status string
 
 const (
 	// StatusStopped indicates the torrent is stopped.
-	StatusStopped TorrentStatus = "stopped"
+	StatusStopped Status = "stopped"
 	// StatusDownloading indicates the torrent is downloading.
-	StatusDownloading TorrentStatus = "downloading"
+	StatusDownloading Status = "downloading"
 	// StatusSeeding indicates the torrent is seeding.
-	StatusSeeding TorrentStatus = "seeding"
+	StatusSeeding Status = "seeding"
 	// StatusError indicates the torrent has an error.
-	StatusError TorrentStatus = "error"
+	StatusError Status = "error"
 )
 
 // Torrent represents a managed torrent.
 type Torrent struct {
 	ID         string         `json:"id"`
 	Info       *TorrentInfo   `json:"info"`
-	Status     TorrentStatus  `json:"status"`
+	Status     Status  `json:"status"`
 	Progress   float64        `json:"progress"`
 	Downloaded int64          `json:"downloaded"`
 	Uploaded   int64          `json:"uploaded"`

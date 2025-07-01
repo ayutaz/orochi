@@ -100,7 +100,7 @@ func TestRouter_Routing(t *testing.T) {
 	var calledRoute string
 	
 	// Register routes
-	router.GET("/", func(w http.ResponseWriter, r *http.Request) error {
+	router.GET("/", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "home"
 		return nil
 	})

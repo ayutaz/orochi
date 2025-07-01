@@ -116,13 +116,13 @@ func (s *Server) Shutdown() error {
 }
 
 // handleHealth handles health check requests.
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "OK")
 }
 
 // handleHome handles the home page.
-func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleHome(w http.ResponseWriter, _ *http.Request) {
 	templatesFS, err := GetTemplatesFS()
 	if err != nil {
 		s.logger.Error("failed to get templates FS", logger.Err(err))
@@ -169,7 +169,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	// Get goroutine count
 	numGoroutines := runtime.NumGoroutine()
 	if numGoroutines <= 2147483647 { // max int32
-		m.SetGoroutineCount(int32(numGoroutines))
+		m.SetGoroutineCount(int32(numGoroutines)) //nolint:gosec // bounds checked above
 	}
 	
 	// Get torrent metrics if manager is available

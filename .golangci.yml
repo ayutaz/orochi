@@ -76,6 +76,8 @@ linters-settings:
     exclude-functions:
       - fmt.Sscanf
       - (io.Writer).Write
+      - github.com/ayutaz/orochi/internal/web.writeJSON
+      - github.com/ayutaz/orochi/internal/web.writeError
   gocritic:
     enabled-tags:
       - diagnostic

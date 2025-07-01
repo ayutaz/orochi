@@ -9,6 +9,14 @@ import (
 	"github.com/ayutaz/orochi/internal/metrics"
 )
 
+// contextKey is a type for context keys to avoid collisions
+type contextKey string
+
+const (
+	// requestIDKey is the context key for request ID
+	requestIDKey contextKey = "request_id"
+)
+
 // Middleware is a function that wraps an HTTP handler
 type Middleware func(http.Handler) http.Handler
 
@@ -120,7 +128,7 @@ func RequestIDMiddleware() Middleware {
 			
 			// Add to context
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, "request_id", requestID)
+			ctx = context.WithValue(ctx, requestIDKey, requestID)
 			
 			// Add to response header
 			w.Header().Set("X-Request-ID", requestID)

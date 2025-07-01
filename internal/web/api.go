@@ -27,7 +27,7 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 // handleListTorrents handles GET /api/torrents
-func (s *Server) handleListTorrents(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleListTorrents(w http.ResponseWriter, _ *http.Request) {
 	torrents := s.torrentManager.ListTorrents()
 	_ = writeJSON(w, http.StatusOK, torrents)
 }
