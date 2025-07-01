@@ -9,10 +9,10 @@ import (
 
 func TestLogger_Levels(t *testing.T) {
 	tests := []struct {
-		name     string
-		logLevel Level
-		msgLevel Level
-		msg      string
+		name      string
+		logLevel  Level
+		msgLevel  Level
+		msg       string
 		shouldLog bool
 	}{
 		{"Debug at Debug level", DebugLevel, DebugLevel, "debug message", true},
@@ -30,9 +30,9 @@ func TestLogger_Levels(t *testing.T) {
 				Output:     &buf,
 				TimeFormat: "2006-01-02",
 			}
-			
+
 			log := New(config)
-			
+
 			switch tt.msgLevel {
 			case DebugLevel:
 				log.Debug(tt.msg)
@@ -43,7 +43,7 @@ func TestLogger_Levels(t *testing.T) {
 			case ErrorLevel:
 				log.Error(tt.msg)
 			}
-			
+
 			output := buf.String()
 			if tt.shouldLog && output == "" {
 				t.Error("expected log output but got none")
@@ -65,15 +65,15 @@ func TestLogger_WithFields(t *testing.T) {
 		Output:     &buf,
 		TimeFormat: "2006-01-02",
 	}
-	
+
 	log := New(config)
 	logWithFields := log.WithFields(
 		String("component", "test"),
 		Int("count", 42),
 	)
-	
+
 	logWithFields.Info("test message", String("extra", "field"))
-	
+
 	output := buf.String()
 	if !strings.Contains(output, "component") {
 		t.Error("output missing component field")
@@ -93,13 +93,13 @@ func TestLogger_WithContext(t *testing.T) {
 		Output:     &buf,
 		TimeFormat: "2006-01-02",
 	}
-	
+
 	log := New(config)
 	ctx := context.WithValue(context.Background(), "request_id", "test-123")
 	logWithCtx := log.WithContext(ctx)
-	
+
 	logWithCtx.Info("test message")
-	
+
 	output := buf.String()
 	if !strings.Contains(output, "request_id") {
 		t.Error("output missing request_id from context")
@@ -121,7 +121,7 @@ func TestLevel_String(t *testing.T) {
 		{FatalLevel, "FATAL"},
 		{Level(99), "UNKNOWN(99)"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
 			if got := tt.level.String(); got != tt.expected {
@@ -143,7 +143,7 @@ func TestHelperFunctions(t *testing.T) {
 		{"Int64 field", Int64("big", int64(9999)), "big", int64(9999)},
 		{"Bool field", Bool("flag", true), "flag", true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.field.Key != tt.key {
@@ -166,7 +166,7 @@ func TestErr(t *testing.T) {
 			t.Errorf("expected nil value, got %v", field.Value)
 		}
 	})
-	
+
 	t.Run("non-nil error", func(t *testing.T) {
 		_, err := strings.NewReader("").Read(nil)
 		field := Err(err)
@@ -186,11 +186,11 @@ func TestGlobalLogger(t *testing.T) {
 		Output:     &buf,
 		TimeFormat: "2006-01-02",
 	}
-	
+
 	SetGlobal(New(config))
-	
+
 	Info("global test")
-	
+
 	output := buf.String()
 	if !strings.Contains(output, "global test") {
 		t.Error("global logger not working")

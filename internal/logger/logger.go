@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-// Level represents the severity of a log message
+// Level represents the severity of a log message.
 type Level int
 
 const (
-	// DebugLevel is the most verbose level
+	// DebugLevel is the most verbose level.
 	DebugLevel Level = iota
-	// InfoLevel is for informational messages
+	// InfoLevel is for informational messages.
 	InfoLevel
 	// WarnLevel is for warning messages
 	WarnLevel
@@ -42,10 +42,10 @@ func (l Level) String() string {
 	}
 }
 
-// Field represents a key-value pair for structured logging
+// Field represents a key-value pair for structured logging.
 type Field struct {
-	Key   string
 	Value interface{}
+	Key   string
 }
 
 // Logger defines the interface for logging
@@ -59,11 +59,11 @@ type Logger interface {
 	WithContext(ctx context.Context) Logger
 }
 
-// Config represents logger configuration
+// Config represents logger configuration.
 type Config struct {
-	Level      Level
 	Output     io.Writer
 	TimeFormat string
+	Level      Level
 }
 
 // DefaultConfig returns the default logger configuration
@@ -75,11 +75,11 @@ func DefaultConfig() *Config {
 	}
 }
 
-// logger is the default implementation of Logger
+// logger is the default implementation of Logger.
 type logger struct {
-	config     *Config
-	fields     []Field
-	context    context.Context
+	context context.Context
+	config  *Config
+	fields  []Field
 }
 
 // New creates a new logger with the given configuration
@@ -107,31 +107,33 @@ func (l *logger) log(level Level, msg string, fields ...Field) {
 
 	// Combine logger fields with message fields
 	allFields := make([]Field, 0, len(l.fields)+len(fields)+3)
-	
+
 	// Add standard fields
 	allFields = append(allFields,
 		Field{Key: "time", Value: time.Now().Format(l.config.TimeFormat)},
 		Field{Key: "level", Value: level.String()},
 		Field{Key: "msg", Value: msg},
 	)
-	
+
 	// Add logger fields
 	allFields = append(allFields, l.fields...)
-	
+
 	// Add message fields
 	allFields = append(allFields, fields...)
-	
+
 	// Add context fields if available
 	if l.context != nil {
-		if reqID := l.context.Value("request_id"); reqID != nil {
+		type contextKey string
+		const requestIDKey contextKey = "request_id"
+		if reqID := l.context.Value(requestIDKey); reqID != nil {
 			allFields = append(allFields, Field{Key: "request_id", Value: reqID})
 		}
 	}
-	
+
 	// Format and write the log entry
 	entry := l.formatEntry(allFields)
 	fmt.Fprintln(l.config.Output, entry)
-	
+
 	// Exit on fatal
 	if level == FatalLevel {
 		os.Exit(1)
@@ -145,7 +147,7 @@ func (l *logger) formatEntry(fields []Field) string {
 		if i > 0 {
 			result += ", "
 		}
-		result += fmt.Sprintf(`"%s": "%v"`, field.Key, field.Value)
+		result += fmt.Sprintf(`%q: "%v"`, field.Key, field.Value)
 	}
 	result += "}"
 	return result
@@ -190,12 +192,8 @@ func (l *logger) WithContext(ctx context.Context) Logger {
 	}
 }
 
-// Global logger instance
-var globalLogger Logger
-
-func init() {
-	globalLogger = New(DefaultConfig())
-}
+// Global logger instance.
+var globalLogger = New(DefaultConfig())
 
 // SetGlobal sets the global logger
 func SetGlobal(l Logger) {
