@@ -1,4 +1,4 @@
-.PHONY: test coverage lint build run clean test-watch
+.PHONY: test coverage lint build run clean test-watch ui-install ui-build ui-dev
 
 # Go parameters
 GOCMD=go
@@ -11,8 +11,8 @@ BINARY_NAME=orochi
 BINARY_UNIX=$(BINARY_NAME)_unix
 MAIN_PATH=./cmd/orochi
 
-# Build the project
-build:
+# Build the project (includes UI)
+build: ui-build
 	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PATH)
 
 # Run tests
@@ -62,3 +62,19 @@ build-all:
 dev-tools:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install gotest.tools/gotestsum@latest
+
+# Install UI dependencies
+ui-install:
+	cd web-ui && npm install
+
+# Build UI for production
+ui-build: ui-install
+	cd web-ui && npm run build
+
+# Run UI in development mode
+ui-dev:
+	cd web-ui && npm start
+
+# Build without UI (for CI/testing)
+build-no-ui:
+	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PATH)

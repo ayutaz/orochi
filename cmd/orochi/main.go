@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/ayutaz/orochi/internal/config"
+	"github.com/ayutaz/orochi/internal/logger"
 	"github.com/ayutaz/orochi/internal/torrent"
 	"github.com/ayutaz/orochi/internal/web"
 )
@@ -25,10 +26,12 @@ func main() {
 		showVersion bool
 		port        int
 		downloadDir string
+		useReal     bool
 	)
 	flag.BoolVar(&showVersion, "version", false, "Show version information")
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
 	flag.StringVar(&downloadDir, "download-dir", "./downloads", "Download directory")
+	flag.BoolVar(&useReal, "real", false, "Use real torrent client (experimental)")
 	flag.Parse()
 
 	if showVersion {
@@ -48,18 +51,32 @@ func main() {
 		cfg.DownloadDir = downloadDir
 	}
 
+	// Create logger
+	log := logger.NewWithLevel(logger.InfoLevel)
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
-		log.Fatalf("Invalid configuration: %v", err)
+		log.Fatal("Invalid configuration", logger.Err(err))
 	}
 
 	// Create download directory if it doesn't exist
 	if err := os.MkdirAll(cfg.GetAbsoluteDownloadDir(), 0o755); err != nil {
-		log.Fatalf("Failed to create download directory: %v", err)
+		log.Fatal("Failed to create download directory", logger.Err(err))
 	}
 
 	// Create torrent manager
-	manager := torrent.NewManager()
+	var manager torrent.Manager
+	if useReal {
+		log.Info("Using real BitTorrent client (experimental)")
+		adapter, err := torrent.NewClientAdapter(cfg, log)
+		if err != nil {
+			log.Fatal("Failed to create torrent client", logger.Err(err))
+		}
+		manager = adapter
+	} else {
+		log.Info("Using stub torrent manager")
+		manager = torrent.NewManager()
+	}
 
 	// Create and configure web server
 	server := web.NewServer(cfg)
@@ -67,9 +84,20 @@ func main() {
 
 	// Start server in background
 	go func() {
-		log.Printf("Starting Orochi on http://localhost:%d", cfg.Port)
+		log.Info("Starting Orochi", logger.Int("port", cfg.Port))
 		if err := server.Start(); err != nil {
-			log.Fatalf("Server failed: %v", err)
+			log.Fatal("Server failed", logger.Err(err))
+		}
+	}()
+
+	// Start progress updater
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		
+		for range ticker.C {
+			// Send actual torrent data via WebSocket
+			server.BroadcastTorrentData()
 		}
 	}()
 
@@ -79,9 +107,9 @@ func main() {
 	<-sigCh
 
 	// Graceful shutdown
-	log.Println("Shutting down...")
+	log.Info("Shutting down...")
 	if err := server.Shutdown(); err != nil {
-		log.Printf("Server shutdown error: %v", err)
+		log.Error("Server shutdown error", logger.Err(err))
 	}
 }
 

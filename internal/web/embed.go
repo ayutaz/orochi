@@ -5,17 +5,22 @@ import (
 	"io/fs"
 )
 
-// Embed static files and templates.
+// Embed the built React app
 //
-//go:embed all:templates/* all:static/*
-var embedFS embed.FS
+//go:embed dist/*
+var distFS embed.FS
 
-// GetStaticFS returns the embedded static files.
-func GetStaticFS() (fs.FS, error) {
-	return fs.Sub(embedFS, "static")
+// GetDistFS returns the embedded dist filesystem.
+func GetDistFS() (fs.FS, error) {
+	return fs.Sub(distFS, "dist")
 }
 
-// GetTemplatesFS returns the embedded template files.
+// GetStaticFS returns the embedded static filesystem.
+func GetStaticFS() (fs.FS, error) {
+	return GetDistFS()
+}
+
+// GetTemplatesFS returns the embedded templates filesystem.
 func GetTemplatesFS() (fs.FS, error) {
-	return fs.Sub(embedFS, "templates")
+	return GetDistFS()
 }

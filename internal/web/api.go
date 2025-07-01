@@ -4,14 +4,46 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/ayutaz/orochi/internal/logger"
+	"github.com/ayutaz/orochi/internal/torrent"
 )
 
 // APIError represents an API error response.
 type APIError struct {
 	Error string `json:"error"`
+}
+
+// TorrentResponse represents a torrent in API responses.
+type TorrentResponse struct {
+	ID           string                 `json:"id"`
+	Info         torrent.TorrentInfo    `json:"info"`
+	Status       string                 `json:"status"`
+	Progress     float64                `json:"progress"`
+	Downloaded   int64                  `json:"downloaded"`
+	Uploaded     int64                  `json:"uploaded"`
+	DownloadRate int64                  `json:"downloadRate"`
+	UploadRate   int64                  `json:"uploadRate"`
+	AddedAt      string                 `json:"addedAt"`
+	Error        string                 `json:"error,omitempty"`
+}
+
+// toTorrentResponse converts a torrent to API response format.
+func toTorrentResponse(t *torrent.Torrent) TorrentResponse {
+	return TorrentResponse{
+		ID:           t.ID,
+		Info:         *t.Info,
+		Status:       string(t.Status),
+		Progress:     t.Progress,
+		Downloaded:   t.Downloaded,
+		Uploaded:     t.Uploaded,
+		DownloadRate: t.DownloadRate,
+		UploadRate:   t.UploadRate,
+		AddedAt:      t.AddedAt.Format(time.RFC3339),
+		Error:        t.Error,
+	}
 }
 
 // writeJSON writes a JSON response.
@@ -29,7 +61,14 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // handleListTorrents handles GET /api/torrents.
 func (s *Server) handleListTorrents(w http.ResponseWriter, _ *http.Request) {
 	torrents := s.torrentManager.ListTorrents()
-	_ = writeJSON(w, http.StatusOK, torrents)
+	
+	// Convert to API response format
+	responses := make([]TorrentResponse, 0, len(torrents))
+	for _, t := range torrents {
+		responses = append(responses, toTorrentResponse(t))
+	}
+	
+	_ = writeJSON(w, http.StatusOK, responses)
 }
 
 // handleAddTorrent handles POST /api/torrents.
@@ -115,7 +154,10 @@ func (s *Server) handleGetTorrent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "torrent not found")
 		return
 	}
-	_ = writeJSON(w, http.StatusOK, torrentObj)
+	
+	// Convert to API response format
+	response := toTorrentResponse(torrentObj)
+	_ = writeJSON(w, http.StatusOK, response)
 }
 
 // handleDeleteTorrent handles DELETE /api/torrents/:id.
@@ -176,4 +218,69 @@ func (s *Server) handleStopTorrent(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Info("torrent stopped", logger.String("id", id))
 	_ = writeJSON(w, http.StatusOK, map[string]string{"status": "stopped"})
+}
+
+// handleGetSettings handles GET /api/settings.
+func (s *Server) handleGetSettings(w http.ResponseWriter, _ *http.Request) {
+	settings := map[string]interface{}{
+		"language":       "ja",
+		"theme":          "light",
+		"downloadPath":   s.config.DownloadDir,
+		"maxConnections": 200,
+		"port":           s.config.Port,
+	}
+	_ = writeJSON(w, http.StatusOK, settings)
+}
+
+// handleUpdateSettings handles PUT /api/settings.
+func (s *Server) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
+	var settings map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
+		s.logger.Error("failed to decode settings", logger.Err(err))
+		writeError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+
+	// Here you would update the actual settings
+	// For now, just return success
+	s.logger.Info("settings updated")
+	_ = writeJSON(w, http.StatusOK, settings)
+}
+
+// FileUpdateRequest represents a file update request.
+type FileUpdateRequest struct {
+	Files []struct {
+		Path     string `json:"path"`
+		Selected bool   `json:"selected"`
+		Priority string `json:"priority,omitempty"`
+	} `json:"files"`
+}
+
+// handleUpdateFiles handles PUT /api/torrents/:id/files.
+func (s *Server) handleUpdateFiles(w http.ResponseWriter, r *http.Request) {
+	params := GetParams(r)
+	id := params["id"]
+
+	// Check if torrent exists
+	_, exists := s.torrentManager.GetTorrent(id)
+	if !exists {
+		writeError(w, http.StatusNotFound, "torrent not found")
+		return
+	}
+
+	var req FileUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.logger.Error("failed to decode request", logger.Err(err))
+		writeError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+
+	// TODO: Implement actual file selection in torrent client
+	// For now, just log and return success
+	s.logger.Info("file selection updated",
+		logger.String("torrent_id", id),
+		logger.Int("file_count", len(req.Files)),
+	)
+
+	_ = writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

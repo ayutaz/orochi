@@ -1,0 +1,102 @@
+{
+  "common": {
+    "add": "追加",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "save": "保存",
+    "start": "開始",
+    "stop": "停止",
+    "pause": "一時停止",
+    "resume": "再開",
+    "settings": "設定",
+    "close": "閉じる",
+    "confirm": "確認",
+    "search": "検索",
+    "details": "詳細"
+  },
+  "navigation": {
+    "torrents": "トレント",
+    "settings": "設定",
+    "about": "このアプリについて"
+  },
+  "torrent": {
+    "addTorrent": "トレントを追加",
+    "addMagnet": "マグネットリンクを追加",
+    "selectFile": "ファイルを選択",
+    "magnetLink": "マグネットリンク",
+    "name": "名前",
+    "size": "サイズ",
+    "progress": "進捗",
+    "status": "ステータス",
+    "seeds": "シード",
+    "peers": "ピア",
+    "downloadSpeed": "ダウンロード速度",
+    "uploadSpeed": "アップロード速度",
+    "eta": "残り時間",
+    "ratio": "共有比",
+    "downloaded": "ダウンロード済み",
+    "uploaded": "アップロード済み",
+    "addedOn": "追加日時",
+    "completedOn": "完了日時",
+    "noTorrents": "トレントがありません",
+    "dropFileHere": "ここにファイルをドロップ",
+    "pastemagnetLink": "マグネットリンクを貼り付けてください"
+  },
+  "torrentDetail": {
+    "title": "トレント詳細",
+    "status": "ステータス",
+    "size": "サイズ",
+    "progress": "進捗",
+    "uploaded": "アップロード",
+    "downloadSpeed": "ダウンロード速度",
+    "uploadSpeed": "アップロード速度",
+    "infoHash": "情報ハッシュ",
+    "selectAll": "すべて選択",
+    "deselectAll": "すべて選択解除",
+    "priority": {
+      "low": "低",
+      "normal": "普通",
+      "high": "高"
+    },
+    "tabs": {
+      "files": "ファイル",
+      "peers": "ピア",
+      "trackers": "トラッカー"
+    }
+  },
+  "status": {
+    "downloading": "ダウンロード中",
+    "seeding": "シード中",
+    "stopped": "停止中",
+    "error": "エラー",
+    "queued": "待機中",
+    "checking": "チェック中"
+  },
+  "settings": {
+    "general": "一般",
+    "downloads": "ダウンロード",
+    "network": "ネットワーク",
+    "advanced": "詳細",
+    "language": "言語",
+    "theme": "テーマ",
+    "darkMode": "ダークモード",
+    "downloadPath": "ダウンロードパス",
+    "maxDownloadSpeed": "最大ダウンロード速度",
+    "maxUploadSpeed": "最大アップロード速度",
+    "maxConnections": "最大接続数",
+    "port": "ポート",
+    "encryption": "暗号化",
+    "dht": "DHT",
+    "peerExchange": "ピア交換",
+    "localPeerDiscovery": "ローカルピア探索"
+  },
+  "messages": {
+    "torrentAdded": "トレントが追加されました",
+    "torrentRemoved": "トレントが削除されました",
+    "settingsSaved": "設定が保存されました",
+    "error": "エラーが発生しました",
+    "confirmDelete": "このトレントを削除してもよろしいですか？",
+    "confirmDeleteWithData": "データも一緒に削除しますか？"
+  }
+}

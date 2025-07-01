@@ -209,3 +209,8 @@ func (g *Group) POST(pattern string, handler HandlerFunc, middlewares ...Middlew
 func (g *Group) DELETE(pattern string, handler HandlerFunc, middlewares ...Middleware) {
 	g.Handle(http.MethodDelete, pattern, handler, middlewares...)
 }
+
+// PUT registers a PUT route in the group.
+func (g *Group) PUT(pattern string, handler HandlerFunc, middlewares ...Middleware) {
+	g.Handle(http.MethodPut, pattern, handler, middlewares...)
+}

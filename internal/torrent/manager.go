@@ -23,14 +23,16 @@ const (
 
 // Torrent represents a managed torrent.
 type Torrent struct {
-	ID         string       `json:"id"`
-	Info       *TorrentInfo `json:"info"`
-	Status     Status       `json:"status"`
-	Progress   float64      `json:"progress"`
-	Downloaded int64        `json:"downloaded"`
-	Uploaded   int64        `json:"uploaded"`
-	AddedAt    time.Time    `json:"added_at"`
-	Error      string       `json:"error,omitempty"`
+	ID           string       `json:"id"`
+	Info         *TorrentInfo `json:"info"`
+	Status       Status       `json:"status"`
+	Progress     float64      `json:"progress"`
+	Downloaded   int64        `json:"downloaded"`
+	Uploaded     int64        `json:"uploaded"`
+	DownloadRate int64        `json:"download_rate"`
+	UploadRate   int64        `json:"upload_rate"`
+	AddedAt      time.Time    `json:"added_at"`
+	Error        string       `json:"error,omitempty"`
 }
 
 // manager implements the Manager interface.

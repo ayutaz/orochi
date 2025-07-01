@@ -1,0 +1,102 @@
+{
+  "common": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "start": "Start",
+    "stop": "Stop",
+    "pause": "Pause",
+    "resume": "Resume",
+    "settings": "Settings",
+    "close": "Close",
+    "confirm": "Confirm",
+    "search": "Search",
+    "details": "Details"
+  },
+  "navigation": {
+    "torrents": "Torrents",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "torrent": {
+    "addTorrent": "Add Torrent",
+    "addMagnet": "Add Magnet Link",
+    "selectFile": "Select File",
+    "magnetLink": "Magnet Link",
+    "name": "Name",
+    "size": "Size",
+    "progress": "Progress",
+    "status": "Status",
+    "seeds": "Seeds",
+    "peers": "Peers",
+    "downloadSpeed": "Download Speed",
+    "uploadSpeed": "Upload Speed",
+    "eta": "ETA",
+    "ratio": "Ratio",
+    "downloaded": "Downloaded",
+    "uploaded": "Uploaded",
+    "addedOn": "Added On",
+    "completedOn": "Completed On",
+    "noTorrents": "No torrents",
+    "dropFileHere": "Drop file here",
+    "pastemagnetLink": "Paste magnet link here"
+  },
+  "torrentDetail": {
+    "title": "Torrent Details",
+    "status": "Status",
+    "size": "Size",
+    "progress": "Progress",
+    "uploaded": "Uploaded",
+    "downloadSpeed": "Download Speed",
+    "uploadSpeed": "Upload Speed",
+    "infoHash": "Info Hash",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "priority": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High"
+    },
+    "tabs": {
+      "files": "Files",
+      "peers": "Peers",
+      "trackers": "Trackers"
+    }
+  },
+  "status": {
+    "downloading": "Downloading",
+    "seeding": "Seeding",
+    "stopped": "Stopped",
+    "error": "Error",
+    "queued": "Queued",
+    "checking": "Checking"
+  },
+  "settings": {
+    "general": "General",
+    "downloads": "Downloads",
+    "network": "Network",
+    "advanced": "Advanced",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "downloadPath": "Download Path",
+    "maxDownloadSpeed": "Max Download Speed",
+    "maxUploadSpeed": "Max Upload Speed",
+    "maxConnections": "Max Connections",
+    "port": "Port",
+    "encryption": "Encryption",
+    "dht": "DHT",
+    "peerExchange": "Peer Exchange",
+    "localPeerDiscovery": "Local Peer Discovery"
+  },
+  "messages": {
+    "torrentAdded": "Torrent added successfully",
+    "torrentRemoved": "Torrent removed successfully",
+    "settingsSaved": "Settings saved successfully",
+    "error": "An error occurred",
+    "confirmDelete": "Are you sure you want to delete this torrent?",
+    "confirmDeleteWithData": "Also delete the downloaded data?"
+  }
+}

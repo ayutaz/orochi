@@ -22,6 +22,7 @@ type Server struct {
 	router         *Router
 	torrentManager torrent.Manager
 	logger         logger.Logger
+	wsHub          *WebSocketHub
 }
 
 // Router returns the server's router for testing.
@@ -40,6 +41,7 @@ func NewServer(cfg *config.Config) *Server {
 		config: cfg,
 		router: NewRouter(),
 		logger: log,
+		wsHub:  NewWebSocketHub(log),
 	}
 
 	// Set up middleware
@@ -70,6 +72,28 @@ func (s *Server) SetTorrentManager(tm torrent.Manager) {
 	s.torrentManager = tm
 }
 
+// BroadcastTorrentUpdate sends torrent update to all connected clients.
+func (s *Server) BroadcastTorrentUpdate() {
+	if s.wsHub != nil {
+		s.wsHub.BroadcastTorrentUpdate()
+	}
+}
+
+// BroadcastTorrentData sends actual torrent data to all connected clients.
+func (s *Server) BroadcastTorrentData() {
+	if s.wsHub != nil && s.torrentManager != nil {
+		torrents := s.torrentManager.ListTorrents()
+		
+		// Convert to API response format
+		torrentResponses := make([]TorrentResponse, 0, len(torrents))
+		for _, t := range torrents {
+			torrentResponses = append(torrentResponses, toTorrentResponse(t))
+		}
+		
+		s.wsHub.BroadcastTorrentData(torrentResponses)
+	}
+}
+
 // setupRoutes configures all HTTP routes.
 func (s *Server) setupRoutes() {
 	// Health check
@@ -89,6 +113,14 @@ func (s *Server) setupRoutes() {
 	api.DELETE("/torrents/:id", s.wrapHandler(s.handleDeleteTorrent))
 	api.POST("/torrents/:id/start", s.wrapHandler(s.handleStartTorrent))
 	api.POST("/torrents/:id/stop", s.wrapHandler(s.handleStopTorrent))
+	api.PUT("/torrents/:id/files", s.wrapHandler(s.handleUpdateFiles))
+	
+	// Settings endpoints
+	api.GET("/settings", s.wrapHandler(s.handleGetSettings))
+	api.PUT("/settings", s.wrapHandler(s.handleUpdateSettings))
+
+	// WebSocket endpoint
+	s.router.GET("/ws", s.wrapHandler(s.handleWebSocket))
 
 	// Web UI
 	s.router.GET("/", s.wrapHandler(s.handleHome))
@@ -105,6 +137,9 @@ func (s *Server) wrapHandler(handler func(w http.ResponseWriter, r *http.Request
 
 // Start starts the HTTP server.
 func (s *Server) Start() error {
+	// Start WebSocket hub
+	go s.wsHub.Run()
+	
 	return s.httpServer.ListenAndServe()
 }
 
@@ -122,7 +157,21 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 // handleHome handles the home page.
-func (s *Server) handleHome(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
+	// Try to serve React app from dist directory first
+	staticFS, err := GetStaticFS()
+	if err == nil {
+		indexHTML, err := fs.ReadFile(staticFS, "index.html")
+		if err == nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if _, err := w.Write(indexHTML); err != nil {
+				s.logger.Error("failed to write response", logger.Err(err))
+			}
+			return
+		}
+	}
+
+	// Fallback to templates directory
 	templatesFS, err := GetTemplatesFS()
 	if err != nil {
 		s.logger.Error("failed to get templates FS", logger.Err(err))
@@ -151,6 +200,19 @@ func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+	
+	// For React app routes, serve index.html
+	path := r.URL.Path
+	if path == "/torrent" || path == "/settings" || 
+		(len(path) > 8 && path[:8] == "/torrent/") {
+		indexHTML, err := fs.ReadFile(staticFS, "index.html")
+		if err == nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write(indexHTML)
+			return
+		}
+	}
+	
 	http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
 }
 
