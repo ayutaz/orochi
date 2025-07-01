@@ -23,13 +23,13 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) error {
 
 // writeError writes an error response.
 func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, APIError{Error: message})
+	_ = writeJSON(w, status, APIError{Error: message})
 }
 
 // handleListTorrents handles GET /api/torrents
 func (s *Server) handleListTorrents(w http.ResponseWriter, r *http.Request) {
 	torrents := s.torrentManager.ListTorrents()
-	writeJSON(w, http.StatusOK, torrents)
+	_ = writeJSON(w, http.StatusOK, torrents)
 }
 
 // handleAddTorrent handles POST /api/torrents
@@ -69,7 +69,7 @@ func (s *Server) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Info("torrent added", logger.String("id", id))
-	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+	_ = writeJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
 // handleAddMagnet handles POST /api/torrents/magnet
@@ -102,7 +102,7 @@ func (s *Server) handleAddMagnet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Info("magnet added", logger.String("id", id))
-	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+	_ = writeJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
 // handleGetTorrent handles GET /api/torrents/:id

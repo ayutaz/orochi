@@ -39,7 +39,10 @@ func TestServerIntegration(t *testing.T) {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 		
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read body: %v", err)
+		}
 		if string(body) != "OK" {
 			t.Errorf("expected body 'OK', got %s", body)
 		}
@@ -93,7 +96,10 @@ func TestServerIntegration(t *testing.T) {
 		defer resp.Body.Close()
 		
 		if resp.StatusCode != http.StatusCreated {
-			body, _ := io.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read body: %v", err)
+		}
 			t.Errorf("expected status 201, got %d: %s", resp.StatusCode, body)
 		}
 		
@@ -123,7 +129,10 @@ func TestServerIntegration(t *testing.T) {
 		defer resp.Body.Close()
 		
 		if resp.StatusCode != http.StatusCreated {
-			body, _ := io.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read body: %v", err)
+		}
 			t.Errorf("expected status 201, got %d: %s", resp.StatusCode, body)
 		}
 		
@@ -140,7 +149,9 @@ func TestServerIntegration(t *testing.T) {
 	t.Run("Get torrent", func(t *testing.T) {
 		// First add a torrent
 		magnet := "magnet:?xt=urn:btih:abcdef1234567890abcdef1234567890abcdef12&dn=get-test.txt"
-		manager.AddMagnet(magnet)
+		if _, err := manager.AddMagnet(magnet); err != nil {
+			t.Fatal(err)
+		}
 		
 		resp, err := http.Get(ts.URL + "/api/torrents/abcdef1234567890abcdef1234567890abcdef12")
 		if err != nil {
@@ -165,7 +176,10 @@ func TestServerIntegration(t *testing.T) {
 	t.Run("Start torrent", func(t *testing.T) {
 		// First add a torrent
 		magnet := "magnet:?xt=urn:btih:fedcba0987654321fedcba0987654321fedcba09&dn=start-test.txt"
-		id, _ := manager.AddMagnet(magnet)
+		id, err := manager.AddMagnet(magnet)
+		if err != nil {
+			t.Fatal(err)
+		}
 		
 		resp, err := http.Post(ts.URL+"/api/torrents/"+id+"/start", "", nil)
 		if err != nil {
@@ -187,8 +201,13 @@ func TestServerIntegration(t *testing.T) {
 	t.Run("Stop torrent", func(t *testing.T) {
 		// First add and start a torrent
 		magnet := "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=stop-test.txt"
-		id, _ := manager.AddMagnet(magnet)
-		manager.StartTorrent(id)
+		id, err := manager.AddMagnet(magnet)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := manager.StartTorrent(id); err != nil {
+			t.Fatal(err)
+		}
 		
 		resp, err := http.Post(ts.URL+"/api/torrents/"+id+"/stop", "", nil)
 		if err != nil {
@@ -210,7 +229,10 @@ func TestServerIntegration(t *testing.T) {
 	t.Run("Delete torrent", func(t *testing.T) {
 		// First add a torrent
 		magnet := "magnet:?xt=urn:btih:deadbeef1234567890abcdefdeadbeef12345678&dn=delete-test.txt"
-		id, _ := manager.AddMagnet(magnet)
+		id, err := manager.AddMagnet(magnet)
+		if err != nil {
+			t.Fatal(err)
+		}
 		
 		req, err := http.NewRequest("DELETE", ts.URL+"/api/torrents/"+id, nil)
 		if err != nil {
@@ -305,7 +327,11 @@ func TestConcurrentRequests(t *testing.T) {
 				// Add magnet
 				magnet := fmt.Sprintf("magnet:?xt=urn:btih:%040d&dn=test%d.txt", i, i)
 				reqBody := map[string]string{"magnet": magnet}
-				data, _ := json.Marshal(reqBody)
+				data, err := json.Marshal(reqBody)
+				if err != nil {
+					t.Error(err)
+					return
+				}
 				
 				resp, err := http.Post(ts.URL+"/api/torrents/magnet", "application/json", bytes.NewReader(data))
 				if err != nil {

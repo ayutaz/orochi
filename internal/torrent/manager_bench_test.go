@@ -16,7 +16,7 @@ func BenchmarkManagerAdd(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Create unique torrent data for each iteration
 		uniqueData := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-		manager.AddTorrent(uniqueData)
+		_, _ = manager.AddTorrent(uniqueData)
 	}
 }
 
@@ -28,7 +28,10 @@ func BenchmarkManagerGet(b *testing.B) {
 	var ids []string
 	for i := 0; i < 1000; i++ {
 		data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-		id, _ := manager.AddTorrent(data)
+		id, err := manager.AddTorrent(data)
+		if err != nil {
+			b.Fatalf("failed to add torrent: %v", err)
+		}
 		ids = append(ids, id)
 	}
 	
@@ -45,7 +48,7 @@ func BenchmarkManagerList(b *testing.B) {
 	// Pre-populate with torrents
 	for i := 0; i < 100; i++ {
 		data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-		manager.AddTorrent(data)
+		_, _ = manager.AddTorrent(data)
 	}
 	
 	b.ResetTimer()
@@ -88,7 +91,7 @@ func BenchmarkManagerWithRWMutex(b *testing.B) {
 	// Pre-populate
 	for i := 0; i < 100; i++ {
 		data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-		manager.AddTorrent(data)
+		_, _ = manager.AddTorrent(data)
 	}
 	
 	b.Run("90%Read-10%Write", func(b *testing.B) {
@@ -138,7 +141,10 @@ func createTestTorrentWithName(name string) []byte {
 		},
 	}
 	
-	data, _ := bencode.EncodeBytes(torrent)
+	data, err := bencode.EncodeBytes(torrent)
+	if err != nil {
+		return nil
+	}
 	return data
 }
 

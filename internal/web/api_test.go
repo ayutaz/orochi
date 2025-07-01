@@ -82,7 +82,10 @@ func TestAPI_Torrents(t *testing.T) {
 			"magnet": "magnet:?xt=urn:btih:1234567890abcdef1234567890abcdef12345678&dn=test.txt",
 		}
 		
-		jsonBody, _ := json.Marshal(body)
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			t.Fatalf("failed to marshal JSON: %v", err)
+		}
 		req := httptest.NewRequest(http.MethodPost, "/api/torrents/magnet", bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()

@@ -93,7 +93,11 @@ func (m *ConcurrentManager) GetTorrent(id string) (*Torrent, bool) {
 	if !exists {
 		return nil, false
 	}
-	return value.(*Torrent), true
+	torrent, ok := value.(*Torrent)
+	if !ok {
+		return nil, false
+	}
+	return torrent, true
 }
 
 // ListTorrents returns all torrents
@@ -103,7 +107,9 @@ func (m *ConcurrentManager) ListTorrents() []*Torrent {
 	torrents := make([]*Torrent, 0, count)
 	
 	m.torrents.Range(func(key, value interface{}) bool {
-		torrents = append(torrents, value.(*Torrent))
+		if torrent, ok := value.(*Torrent); ok {
+			torrents = append(torrents, torrent)
+		}
 		return true
 	})
 	
@@ -122,7 +128,10 @@ func (m *ConcurrentManager) StartTorrent(id string) error {
 		return errors.NotFoundf("torrent with id %s not found", id)
 	}
 	
-	torrent := value.(*Torrent)
+	torrent, ok := value.(*Torrent)
+	if !ok {
+		return errors.InternalWithError("invalid torrent type", nil)
+	}
 	// In real implementation, this would need proper synchronization
 	// For now, we're just updating the status
 	torrent.Status = StatusDownloading
@@ -137,7 +146,10 @@ func (m *ConcurrentManager) StopTorrent(id string) error {
 		return errors.NotFoundf("torrent with id %s not found", id)
 	}
 	
-	torrent := value.(*Torrent)
+	torrent, ok := value.(*Torrent)
+	if !ok {
+		return errors.InternalWithError("invalid torrent type", nil)
+	}
 	// In real implementation, this would need proper synchronization
 	// For now, we're just updating the status
 	torrent.Status = StatusStopped

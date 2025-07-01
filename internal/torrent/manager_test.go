@@ -170,7 +170,9 @@ func TestManager_StopTorrent(t *testing.T) {
 		torrentData := CreateTestTorrent()
 		
 		id, _ := manager.AddTorrent(torrentData)
-		_ = manager.StartTorrent(id)
+		if err := manager.StartTorrent(id); err != nil {
+			t.Errorf("failed to start torrent: %v", err)
+		}
 		
 		err := manager.StopTorrent(id)
 		
@@ -194,7 +196,10 @@ func TestManager_ListTorrents(t *testing.T) {
 		id1, _ := manager.AddTorrent(torrentData)
 		
 		magnetLink := "magnet:?xt=urn:btih:abcdef1234567890abcdef1234567890abcdef12&dn=test2.txt"
-		id2, _ := manager.AddMagnet(magnetLink)
+		id2, err := manager.AddMagnet(magnetLink)
+		if err != nil {
+			t.Fatalf("failed to add magnet: %v", err)
+		}
 		
 		torrents := manager.ListTorrents()
 		

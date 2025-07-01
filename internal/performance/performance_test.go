@@ -51,7 +51,10 @@ func BenchmarkServer(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			magnet := fmt.Sprintf("magnet:?xt=urn:btih:%040d&dn=test%d.txt", i, i)
 			reqBody := map[string]string{"magnet": magnet}
-			data, _ := json.Marshal(reqBody)
+			data, err := json.Marshal(reqBody)
+			if err != nil {
+				b.Fatal(err)
+			}
 			
 			resp, err := http.Post(ts.URL+"/api/torrents/magnet", "application/json", bytes.NewReader(data))
 			if err != nil {
@@ -211,7 +214,10 @@ func TestLoadPerformance(t *testing.T) {
 					// Add magnet
 					magnet := fmt.Sprintf("magnet:?xt=urn:btih:%040d&dn=load%d-%d.txt", clientID*1000+req, clientID, req)
 					reqBody := map[string]string{"magnet": magnet}
-					data, _ := json.Marshal(reqBody)
+					data, err := json.Marshal(reqBody)
+			if err != nil {
+				b.Fatal(err)
+			}
 					
 					resp, err := http.Post(ts.URL+"/api/torrents/magnet", "application/json", bytes.NewReader(data))
 					if err == nil {
@@ -297,7 +303,7 @@ func TestMemoryUsage(t *testing.T) {
 		
 		// Remove all torrents
 		for _, id := range ids {
-			manager.RemoveTorrent(id)
+			_ = manager.RemoveTorrent(id)
 		}
 		
 		// Check count is back to 0
