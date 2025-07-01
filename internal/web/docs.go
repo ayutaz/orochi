@@ -1,24 +1,38 @@
 package web
 
 import (
+	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
+
+	"github.com/ayutaz/orochi/internal/logger"
 )
 
 // handleAPIDocs serves the Swagger UI page.
 func (s *Server) handleAPIDocs(w http.ResponseWriter, r *http.Request) {
-	// Serve the swagger.html file
-	apiDocsPath := filepath.Join("api", "swagger.html")
-
-	// Check if file exists
-	if _, err := os.Stat(apiDocsPath); os.IsNotExist(err) {
-		http.Error(w, "API documentation not found", http.StatusNotFound)
+	apiFS, err := GetAPIDocsFS()
+	if err != nil {
+		s.logger.Error("failed to get API docs filesystem", logger.Err(err))
+		http.Error(w, "API documentation not available", http.StatusInternalServerError)
 		return
 	}
 
-	http.ServeFile(w, r, apiDocsPath)
+	// Open swagger.html from embedded filesystem
+	file, err := apiFS.Open("swagger.html")
+	if err != nil {
+		s.logger.Error("failed to open swagger.html", logger.Err(err))
+		http.Error(w, "API documentation not found", http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+
+	// Set content type
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Copy file contents to response
+	if _, err := io.Copy(w, file); err != nil {
+		s.logger.Error("failed to serve swagger.html", logger.Err(err))
+	}
 }
 
 // handleAPIDocsStatic serves static files for API documentation.
@@ -32,9 +46,6 @@ func (s *Server) handleAPIDocsStatic(w http.ResponseWriter, r *http.Request) {
 	// Remove any leading slash
 	path = strings.TrimPrefix(path, "/")
 
-	// Construct the full path
-	fullPath := filepath.Join("api", path)
-
 	// Serve only specific files for security
 	allowedFiles := map[string]bool{
 		"openapi.yaml": true,
@@ -46,16 +57,31 @@ func (s *Server) handleAPIDocsStatic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if file exists
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		http.Error(w, "File not found", http.StatusNotFound)
+	apiFS, err := GetAPIDocsFS()
+	if err != nil {
+		s.logger.Error("failed to get API docs filesystem", logger.Err(err))
+		http.Error(w, "API documentation not available", http.StatusInternalServerError)
 		return
 	}
 
-	// Set content type for YAML files
+	// Open file from embedded filesystem
+	file, err := apiFS.Open(path)
+	if err != nil {
+		s.logger.Error("failed to open API docs file", logger.String("path", path), logger.Err(err))
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+
+	// Set content type
 	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
-		w.Header().Set("Content-Type", "application/x-yaml")
+		w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
+	} else if strings.HasSuffix(path, ".html") {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	}
 
-	http.ServeFile(w, r, fullPath)
+	// Copy file contents to response
+	if _, err := io.Copy(w, file); err != nil {
+		s.logger.Error("failed to serve API docs file", logger.String("path", path), logger.Err(err))
+	}
 }

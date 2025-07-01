@@ -10,6 +10,11 @@ import (
 //go:embed dist/*
 var distFS embed.FS
 
+// Embed API documentation files
+//
+//go:embed all:api/*
+var apiDocsFS embed.FS
+
 // GetDistFS returns the embedded dist filesystem.
 func GetDistFS() (fs.FS, error) {
 	return fs.Sub(distFS, "dist")
@@ -23,4 +28,9 @@ func GetStaticFS() (fs.FS, error) {
 // GetTemplatesFS returns the embedded templates filesystem.
 func GetTemplatesFS() (fs.FS, error) {
 	return GetDistFS()
+}
+
+// GetAPIDocsFS returns the embedded API documentation filesystem.
+func GetAPIDocsFS() (fs.FS, error) {
+	return fs.Sub(apiDocsFS, "api")
 }
