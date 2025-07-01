@@ -1,0 +1,263 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3d3d3d;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --accent: #4CAF50;
+    --accent-hover: #45a049;
+    --danger: #f44336;
+    --warning: #ff9800;
+    --border: #404040;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Layout */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.header {
+    background-color: var(--bg-secondary);
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+/* Actions bar */
+.actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.btn-secondary {
+    background-color: var(--bg-tertiary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--border);
+}
+
+/* Torrent list */
+.torrent-list {
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.torrent-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+}
+
+.torrent-item:last-child {
+    border-bottom: none;
+}
+
+.torrent-info h3 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.torrent-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.torrent-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.torrent-actions button {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+/* Progress bar */
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background-color: var(--bg-tertiary);
+    border-radius: 2px;
+    margin: 0.5rem 0;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--accent);
+    transition: width 0.3s ease;
+}
+
+/* Status indicators */
+.status {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.status-downloading {
+    background-color: var(--accent);
+    color: white;
+}
+
+.status-stopped {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.status-seeding {
+    background-color: var(--warning);
+    color: white;
+}
+
+.status-error {
+    background-color: var(--danger);
+    color: white;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+    font-size: 1.4rem;
+}
+
+.modal-body {
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.modal-footer {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .torrent-item {
+        grid-template-columns: 1fr;
+    }
+    
+    .torrent-actions {
+        margin-top: 1rem;
+    }
+    
+    .actions {
+        flex-wrap: wrap;
+    }
+}

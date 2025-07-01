@@ -82,7 +82,13 @@ jobs:
         go-version: '1.22'
     
     - name: Build
-      run: go build -v ./cmd/orochi
+      run: |
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          go build -v -o orochi.exe ./cmd/orochi
+        else
+          go build -v -o orochi ./cmd/orochi
+        fi
+      shell: bash
     
     - name: List files
       run: ls -la

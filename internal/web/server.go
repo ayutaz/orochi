@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"time"
 
@@ -86,11 +87,28 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	// Serve static files
 	if r.URL.Path != "/" {
-		// Try to serve static files
-		http.FileServer(http.Dir("web")).ServeHTTP(w, r)
+		staticFS, err := GetStaticFS()
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
 		return
 	}
 	
 	// Serve index.html for root path
-	http.ServeFile(w, r, "web/templates/index.html")
+	templatesFS, err := GetTemplatesFS()
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	
+	indexHTML, err := fs.ReadFile(templatesFS, "index.html")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(indexHTML)
 }
