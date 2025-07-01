@@ -1,0 +1,108 @@
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+    - test/integration
+
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - golint
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - structcheck
+    - varcheck
+    - ineffassign
+    - deadcode
+    - typecheck
+    - gosec
+    - megacheck
+    - dupl
+    - misspell
+    - lll
+    - nakedret
+    - prealloc
+    - exportloopref
+    - gocritic
+    - gochecknoinits
+    - gocognit
+    - godot
+    - godox
+    - goerr113
+    - gofumpt
+    - goheader
+    - gomnd
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - ifshort
+    - importas
+    - makezero
+    - nestif
+    - nilerr
+    - nlreturn
+    - noctx
+    - nolintlint
+    - paralleltest
+    - predeclared
+    - promlinter
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - stylecheck
+    - tagliatelle
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - wsl
+
+  disable:
+    - exhaustive
+    - exhaustruct
+    - gochecknoglobals
+    - gocyclo
+    - funlen
+    - goconst
+    - testpackage
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/ayutaz/orochi
+  golint:
+    min-confidence: 0.8
+  govet:
+    check-shadowing: true
+  lll:
+    line-length: 120
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+  godot:
+    scope: declarations
+    capital: true
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl
+        - gosec
+        - goconst
