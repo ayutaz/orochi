@@ -115,7 +115,7 @@ func (s *Server) handleGetTorrent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "torrent not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, torrentObj)
+	_ = writeJSON(w, http.StatusOK, torrentObj)
 }
 
 // handleDeleteTorrent handles DELETE /api/torrents/:id
@@ -155,7 +155,7 @@ func (s *Server) handleStartTorrent(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	s.logger.Info("torrent started", logger.String("id", id))
-	writeJSON(w, http.StatusOK, map[string]string{"status": "started"})
+	_ = writeJSON(w, http.StatusOK, map[string]string{"status": "started"})
 }
 
 // handleStopTorrent handles POST /api/torrents/:id/stop
@@ -175,5 +175,5 @@ func (s *Server) handleStopTorrent(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	s.logger.Info("torrent stopped", logger.String("id", id))
-	writeJSON(w, http.StatusOK, map[string]string{"status": "stopped"})
+	_ = writeJSON(w, http.StatusOK, map[string]string{"status": "stopped"})
 }

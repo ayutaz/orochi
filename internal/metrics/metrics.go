@@ -151,17 +151,15 @@ func (d *DurationMetric) Record(duration time.Duration) {
 }
 
 // Stats returns duration statistics
-func (d *DurationMetric) Stats() (count int64, avg, min, max time.Duration) {
+func (d *DurationMetric) Stats() (count int64, avg, minDur, maxDur time.Duration) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	count = d.count
 	if count > 0 {
 		avg = time.Duration(d.sum / count)
-		minDuration := time.Duration(d.min)
-		min = minDuration
-		maxDuration := time.Duration(d.max)
-		max = maxDuration
+		minDur = time.Duration(d.min)
+		maxDur = time.Duration(d.max)
 	}
 	return
 }

@@ -96,6 +96,25 @@ issues:
         - goconst
         - err113
         - gocognit
+        - errcheck
+    - linters:
+        - errcheck
+      text: "Error return value of `l.loadFromFile` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `manager.AddTorrent` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `manager.AddMagnet` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `manager.RemoveTorrent` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `writeJSON` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `w.Write` is not checked"
     - path: vendor
       linters:
         - all

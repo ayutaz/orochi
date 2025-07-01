@@ -68,7 +68,7 @@ func BenchmarkManagerConcurrentOperations(b *testing.B) {
 			case 0:
 				// Add
 				data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-				manager.AddTorrent(data)
+				_, _ = manager.AddTorrent(data)
 			case 1:
 				// Get
 				manager.GetTorrent("somekey")
@@ -101,7 +101,7 @@ func BenchmarkManagerWithRWMutex(b *testing.B) {
 				if i%10 == 0 {
 					// Write operation
 					data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-					manager.AddTorrent(data)
+					_, _ = manager.AddTorrent(data)
 				} else {
 					// Read operation
 					manager.Count()
@@ -118,7 +118,7 @@ func BenchmarkManagerWithRWMutex(b *testing.B) {
 				if i%2 == 0 {
 					// Write operation
 					data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-					manager.AddTorrent(data)
+					_, _ = manager.AddTorrent(data)
 				} else {
 					// Read operation
 					manager.ListTorrents()
@@ -168,7 +168,7 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 			// Pre-populate
 			for i := 0; i < 100; i++ {
 				data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
-				manager.AddTorrent(data)
+				_, _ = manager.AddTorrent(data)
 			}
 			
 			b.ResetTimer()
@@ -205,7 +205,7 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 							return
 						default:
 							data := createTestTorrentWithName(fmt.Sprintf("writer%d-test%d.txt", id, j))
-							manager.AddTorrent(data)
+							_, _ = manager.AddTorrent(data)
 							j++
 						}
 					}
