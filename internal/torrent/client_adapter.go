@@ -2,18 +2,22 @@ package torrent
 
 import (
 	"context"
+	"encoding/base64"
 	"strings"
 	"time"
 
 	"github.com/ayutaz/orochi/internal/config"
+	"github.com/ayutaz/orochi/internal/database"
 	"github.com/ayutaz/orochi/internal/logger"
 	torrentclient "github.com/ayutaz/orochi/internal/torrent_client"
 )
 
 // ClientAdapter adapts torrent_client.Client to the Manager interface.
 type ClientAdapter struct {
-	client *torrentclient.Client
-	logger logger.Logger
+	client   *torrentclient.Client
+	logger   logger.Logger
+	db       *database.DB
+	updater  *ProgressUpdater
 }
 
 // NewClientAdapter creates a new adapter for the torrent client.
@@ -23,10 +27,67 @@ func NewClientAdapter(cfg *config.Config, log logger.Logger) (*ClientAdapter, er
 		return nil, err
 	}
 
-	return &ClientAdapter{
+	// Initialize database
+	dbPath := cfg.DataDir + "/orochi.db"
+	db, err := database.NewDB(dbPath, log)
+	if err != nil {
+		return nil, err
+	}
+
+	adapter := &ClientAdapter{
 		client: client,
 		logger: log,
-	}, nil
+		db:     db,
+	}
+
+	// Create and start progress updater
+	adapter.updater = NewProgressUpdater(adapter, db, log)
+	adapter.updater.Start()
+
+	// Restore torrents from database
+	if err := adapter.restoreTorrents(); err != nil {
+		log.Error("failed to restore torrents", logger.Err(err))
+	}
+
+	return adapter, nil
+}
+
+// restoreTorrents restores torrents from the database.
+func (a *ClientAdapter) restoreTorrents() error {
+	records, err := a.db.ListTorrents()
+	if err != nil {
+		return err
+	}
+
+	for _, record := range records {
+		// Decode metadata
+		data, err := base64.StdEncoding.DecodeString(record.Metadata)
+		if err != nil {
+			a.logger.Error("failed to decode torrent metadata",
+				logger.String("id", record.ID),
+				logger.Err(err),
+			)
+			continue
+		}
+
+		// Add torrent back to client
+		ctx := context.Background()
+		_, err = a.client.AddTorrent(ctx, data)
+		if err != nil {
+			a.logger.Error("failed to restore torrent",
+				logger.String("id", record.ID),
+				logger.Err(err),
+			)
+			continue
+		}
+
+		a.logger.Info("restored torrent",
+			logger.String("id", record.ID),
+			logger.String("name", record.Name),
+		)
+	}
+
+	return nil
 }
 
 // AddTorrent implements Manager.
@@ -36,6 +97,27 @@ func (a *ClientAdapter) AddTorrent(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Save to database
+	record := &database.TorrentRecord{
+		ID:           torr.InfoHash(),
+		InfoHash:     torr.InfoHash(),
+		Name:         torr.Name(),
+		Size:         torr.Length(),
+		Status:       "stopped",
+		Progress:     0,
+		Downloaded:   0,
+		Uploaded:     0,
+		DownloadPath: torr.SavePath(),
+		AddedAt:      time.Now(),
+		Metadata:     base64.StdEncoding.EncodeToString(data),
+	}
+
+	if err := a.db.SaveTorrent(record); err != nil {
+		a.logger.Error("failed to save torrent to database", logger.Err(err))
+		// Don't fail the operation, just log the error
+	}
+
 	return torr.InfoHash(), nil
 }
 
@@ -58,6 +140,9 @@ func (a *ClientAdapter) GetTorrent(id string) (*Torrent, bool) {
 		return nil, false
 	}
 
+	// Get stats for upload data
+	stats := torr.GetStats()
+	
 	// Convert to our Torrent struct
 	return &Torrent{
 		ID:           torr.InfoHash(),
@@ -65,10 +150,10 @@ func (a *ClientAdapter) GetTorrent(id string) (*Torrent, bool) {
 		Status:       a.mapStatus(torr.Status()),
 		Progress:     torr.Progress(),
 		Downloaded:   torr.BytesCompleted(),
-		Uploaded:     0, // TODO: get from stats
+		Uploaded:     stats.BytesWrittenData,
 		DownloadRate: torr.DownloadRate(),
 		UploadRate:   torr.UploadRate(),
-		AddedAt:      time.Now(), // TODO: track this
+		AddedAt:      torr.AddedAt(),
 		Error:        "",
 	}, true
 }
@@ -135,6 +220,13 @@ func (a *ClientAdapter) RemoveTorrent(id string) error {
 	if err != nil {
 		return err
 	}
+	
+	// Remove from database
+	if err := a.db.DeleteTorrent(id); err != nil {
+		a.logger.Error("failed to delete torrent from database", logger.Err(err))
+		// Don't fail the operation, just log the error
+	}
+	
 	return torr.Remove()
 }
 
@@ -165,5 +257,28 @@ func (a *ClientAdapter) Count() int {
 
 // Close closes the adapter and underlying client.
 func (a *ClientAdapter) Close() error {
+	// Stop progress updater
+	if a.updater != nil {
+		a.updater.Stop()
+	}
+	
+	// Close database
+	if a.db != nil {
+		_ = a.db.Close()
+	}
+	
 	return a.client.Close()
+}
+
+// GetClient returns the underlying torrent client.
+func (a *ClientAdapter) GetClient() (*torrentclient.Client, error) {
+	if a.client == nil {
+		return nil, errors.InternalErrorf("torrent client not initialized")
+	}
+	return a.client, nil
+}
+
+// GetDB returns the database connection.
+func (a *ClientAdapter) GetDB() *database.DB {
+	return a.db
 }

@@ -203,6 +203,11 @@ func (t *Torrent) Status() string {
 	return "stopped"
 }
 
+// AddedAt returns when the torrent was added.
+func (t *Torrent) AddedAt() time.Time {
+	return t.addedAt
+}
+
 // Stats returns the torrent's statistics.
 func (t *Torrent) Stats() torrent.TorrentStats {
 	return t.torrent.Stats()
@@ -299,6 +304,27 @@ func (t *Torrent) Files() []File {
 // SavePath returns the path where the torrent is saved.
 func (t *Torrent) SavePath() string {
 	return filepath.Join(t.client.config.GetAbsoluteDownloadDir(), t.torrent.Name())
+}
+
+// SetFilePriority sets the priority for a specific file.
+func (t *Torrent) SetFilePriority(fileIndex int, priority int) error {
+	files := t.torrent.Files()
+	if fileIndex < 0 || fileIndex >= len(files) {
+		return errors.InvalidInputf("file index %d out of range", fileIndex)
+	}
+	
+	// Set priority: 0 = don't download, 1 = normal, 2 = high
+	files[fileIndex].SetPriority(priority)
+	return nil
+}
+
+// SetFileSelected sets whether a file should be downloaded.
+func (t *Torrent) SetFileSelected(fileIndex int, selected bool) error {
+	priority := 0
+	if selected {
+		priority = 1
+	}
+	return t.SetFilePriority(fileIndex, priority)
 }
 
 // GetStats returns torrent statistics in our format.

@@ -15,20 +15,24 @@ var (
 
 // Config represents the application configuration.
 type Config struct {
-	Port         int    `json:"port"`
-	DownloadDir  string `json:"download_dir"`
-	MaxTorrents  int    `json:"max_torrents"`
-	MaxPeers     int    `json:"max_peers"`
-	VPNInterface string `json:"vpn_interface,omitempty"`
+	Port           int      `json:"port"`
+	DownloadDir    string   `json:"download_dir"`
+	MaxTorrents    int      `json:"max_torrents"`
+	MaxPeers       int      `json:"max_peers"`
+	VPNInterface   string   `json:"vpn_interface,omitempty"`
+	DataDir        string   `json:"data_dir,omitempty"`
+	AllowedOrigins []string `json:"allowed_origins,omitempty"`
 }
 
 // LoadDefault returns the default configuration.
 func LoadDefault() *Config {
 	return &Config{
-		Port:        8080,
-		DownloadDir: "./downloads",
-		MaxTorrents: 5,
-		MaxPeers:    200,
+		Port:           8080,
+		DownloadDir:    "./downloads",
+		MaxTorrents:    5,
+		MaxPeers:       200,
+		DataDir:        "./data",
+		AllowedOrigins: []string{}, // Empty means allow all origins
 	}
 }
 

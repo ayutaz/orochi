@@ -73,10 +73,32 @@ func (s *Server) handleListTorrents(w http.ResponseWriter, _ *http.Request) {
 
 // handleAddTorrent handles POST /api/torrents.
 func (s *Server) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
+	// Get max upload size from settings (default 10MB)
+	maxUploadSize := int64(10 << 20) // 10MB
+	adapter, ok := s.torrentManager.(*torrent.ClientAdapter)
+	if ok {
+		db := adapter.GetDB()
+		if db != nil {
+			var settings map[string]interface{}
+			if err := db.GetSettingsJSON(&settings); err == nil {
+				if maxSize, ok := settings["maxUploadSize"].(float64); ok && maxSize > 0 {
+					maxUploadSize = int64(maxSize)
+				}
+			}
+		}
+	}
+
+	// Limit request body size
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+
 	// Parse multipart form
-	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB max
+	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
 		s.logger.Error("failed to parse form data", logger.Err(err))
-		writeError(w, http.StatusBadRequest, "failed to parse form data")
+		if err.Error() == "http: request body too large" {
+			writeError(w, http.StatusRequestEntityTooLarge, "file too large")
+		} else {
+			writeError(w, http.StatusBadRequest, "failed to parse form data")
+		}
 		return
 	}
 
@@ -222,12 +244,34 @@ func (s *Server) handleStopTorrent(w http.ResponseWriter, r *http.Request) {
 
 // handleGetSettings handles GET /api/settings.
 func (s *Server) handleGetSettings(w http.ResponseWriter, _ *http.Request) {
+	// Get settings from database if available
+	adapter, ok := s.torrentManager.(*torrent.ClientAdapter)
+	if ok {
+		client, err := adapter.GetClient()
+		if err == nil {
+			db := adapter.GetDB()
+			if db != nil {
+				var dbSettings map[string]interface{}
+				if err := db.GetSettingsJSON(&dbSettings); err == nil && dbSettings != nil {
+					_ = writeJSON(w, http.StatusOK, dbSettings)
+					return
+				}
+			}
+		}
+	}
+
+	// Return default settings
 	settings := map[string]interface{}{
-		"language":       "ja",
-		"theme":          "light",
-		"downloadPath":   s.config.DownloadDir,
-		"maxConnections": 200,
-		"port":           s.config.Port,
+		"language":           "ja",
+		"theme":              "light",
+		"downloadPath":       s.config.DownloadDir,
+		"maxConnections":     s.config.MaxPeers,
+		"port":               s.config.Port,
+		"maxDownloadSpeed":   0,
+		"maxUploadSpeed":     0,
+		"dht":                true,
+		"peerExchange":       true,
+		"localPeerDiscovery": true,
 	}
 	_ = writeJSON(w, http.StatusOK, settings)
 }
@@ -241,8 +285,22 @@ func (s *Server) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Here you would update the actual settings
-	// For now, just return success
+	// Save settings to database if available
+	adapter, ok := s.torrentManager.(*torrent.ClientAdapter)
+	if ok {
+		db := adapter.GetDB()
+		if db != nil {
+			if err := db.SaveSettingsJSON(settings); err != nil {
+				s.logger.Error("failed to save settings to database", logger.Err(err))
+			}
+		}
+	}
+
+	// Apply settings that can be changed at runtime
+	if downloadPath, ok := settings["downloadPath"].(string); ok && downloadPath != "" {
+		s.config.DownloadDir = downloadPath
+	}
+
 	s.logger.Info("settings updated")
 	_ = writeJSON(w, http.StatusOK, settings)
 }
@@ -275,8 +333,39 @@ func (s *Server) handleUpdateFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement actual file selection in torrent client
-	// For now, just log and return success
+	// Update file selection in torrent client
+	adapter, ok := s.torrentManager.(*torrent.ClientAdapter)
+	if !ok {
+		s.logger.Error("torrent manager is not ClientAdapter")
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	client, err := adapter.GetClient()
+	if err != nil {
+		s.logger.Error("failed to get torrent client", logger.Err(err))
+		writeError(w, http.StatusInternalServerError, "failed to get torrent client")
+		return
+	}
+
+	torr, err := client.GetTorrent(id)
+	if err != nil {
+		s.logger.Error("failed to get torrent from client", logger.Err(err))
+		writeError(w, http.StatusNotFound, "torrent not found")
+		return
+	}
+
+	// Update file selection
+	for i, file := range req.Files {
+		if err := torr.SetFileSelected(i, file.Selected); err != nil {
+			s.logger.Error("failed to set file selection",
+				logger.String("torrent_id", id),
+				logger.Int("file_index", i),
+				logger.Err(err),
+			)
+		}
+	}
+
 	s.logger.Info("file selection updated",
 		logger.String("torrent_id", id),
 		logger.Int("file_count", len(req.Files)),

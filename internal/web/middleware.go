@@ -3,8 +3,11 @@ package web
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/ayutaz/orochi/internal/auth"
+	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/ayutaz/orochi/internal/logger"
 	"github.com/ayutaz/orochi/internal/metrics"
 )
@@ -188,4 +191,43 @@ func generateRandomString(length int) string {
 		result[i] = charset[time.Now().UnixNano()%int64(len(charset))]
 	}
 	return string(result)
+}
+
+// AuthMiddleware checks for valid authentication.
+func AuthMiddleware(authManager interface{ ValidateToken(string) (string, error) }) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip auth for certain paths
+			path := r.URL.Path
+			if path == "/health" || path == "/api/auth/login" || strings.HasPrefix(path, "/ws") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Check for Bearer token
+			authHeader := r.Header.Get("Authorization")
+			token, ok := auth.ParseBearerToken(authHeader)
+			if !ok {
+				w.Header().Set("WWW-Authenticate", "Bearer")
+				writeError(w, http.StatusUnauthorized, "missing or invalid authorization header")
+				return
+			}
+
+			// Validate token
+			username, err := authManager.ValidateToken(token)
+			if err != nil {
+				w.Header().Set("WWW-Authenticate", "Bearer")
+				if errors.IsAuthenticationFailed(err) {
+					writeError(w, http.StatusUnauthorized, err.Error())
+				} else {
+					writeError(w, http.StatusInternalServerError, "authentication error")
+				}
+				return
+			}
+
+			// Add username to context
+			ctx := context.WithValue(r.Context(), contextKey("username"), username)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }

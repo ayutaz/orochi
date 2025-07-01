@@ -8,12 +8,26 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(_ *http.Request) bool {
-		// Allow all origins in development
-		// TODO: Restrict in production
-		return true
-	},
+// createUpgrader creates a websocket upgrader with appropriate CORS settings.
+func createUpgrader(allowedOrigins []string) websocket.Upgrader {
+	return websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			// If no origins specified, allow all (development mode)
+			if len(allowedOrigins) == 0 {
+				return true
+			}
+			
+			// Check if request origin is in allowed list
+			origin := r.Header.Get("Origin")
+			for _, allowed := range allowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			
+			return false
+		},
+	}
 }
 
 // Message represents a message sent over WebSocket.
@@ -29,16 +43,18 @@ type Hub struct {
 	register   chan *websocket.Conn
 	unregister chan *websocket.Conn
 	logger     logger.Logger
+	upgrader   websocket.Upgrader
 }
 
 // NewHub creates a new WebSocket hub.
-func NewHub(log logger.Logger) *Hub {
+func NewHub(log logger.Logger, allowedOrigins []string) *Hub {
 	return &Hub{
 		clients:    make(map[*websocket.Conn]bool),
 		broadcast:  make(chan Message),
 		register:   make(chan *websocket.Conn),
 		unregister: make(chan *websocket.Conn),
 		logger:     log,
+		upgrader:   createUpgrader(allowedOrigins),
 	}
 }
 
@@ -89,7 +105,7 @@ func (h *Hub) BroadcastTorrentData(torrents interface{}) {
 
 // handleWebSocket handles WebSocket connections.
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := s.wsHub.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.logger.Error("Failed to upgrade WebSocket", logger.Err(err))
 		return

@@ -41,7 +41,7 @@ func NewServer(cfg *config.Config) *Server {
 		config: cfg,
 		router: NewRouter(),
 		logger: log,
-		wsHub:  NewHub(log),
+		wsHub:  NewHub(log, cfg.AllowedOrigins),
 	}
 
 	// Set up middleware
