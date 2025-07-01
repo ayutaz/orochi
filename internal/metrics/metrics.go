@@ -6,42 +6,42 @@ import (
 	"time"
 )
 
-// Metrics holds application metrics
+// Metrics holds application metrics.
 type Metrics struct {
-	// Torrent metrics
-	TorrentsTotal        int64
-	TorrentsDownloading  int64
-	TorrentsSeeding      int64
-	TorrentsStopped      int64
-	TorrentsError        int64
-	
-	// Transfer metrics
-	BytesDownloaded      int64
-	BytesUploaded        int64
-	
-	// HTTP metrics
-	HTTPRequests         int64
-	HTTPErrors           int64
-	HTTPRequestDuration  *DurationMetric
-	
-	// Performance metrics
-	MemoryUsage          int64
-	GoroutineCount       int32
-	
 	// Time tracking
-	StartTime            time.Time
+	StartTime           time.Time
+	HTTPRequestDuration *DurationMetric
+
+	// Torrent metrics
+	TorrentsTotal       int64
+	TorrentsDownloading int64
+	TorrentsSeeding     int64
+	TorrentsStopped     int64
+	TorrentsError       int64
+
+	// Transfer metrics
+	BytesDownloaded int64
+	BytesUploaded   int64
+
+	// HTTP metrics
+	HTTPRequests int64
+	HTTPErrors   int64
+	MemoryUsage  int64
+
+	// Performance metrics
+	GoroutineCount int32
 }
 
-// DurationMetric tracks duration statistics
+// DurationMetric tracks duration statistics.
 type DurationMetric struct {
-	mu      sync.RWMutex
-	count   int64
-	sum     int64
-	min     int64
-	max     int64
+	mu    sync.RWMutex
+	count int64
+	sum   int64
+	min   int64
+	max   int64
 }
 
-// Global metrics instance
+// Global metrics instance.
 var (
 	globalMetrics *Metrics
 	once          sync.Once
@@ -83,7 +83,7 @@ func (m *Metrics) SetTorrentStatus(oldStatus, newStatus string) {
 	case "error":
 		atomic.AddInt64(&m.TorrentsError, -1)
 	}
-	
+
 	// Increment new status
 	switch newStatus {
 	case "downloading":
@@ -135,13 +135,13 @@ func (m *Metrics) SetGoroutineCount(count int32) {
 // Record records a duration measurement
 func (d *DurationMetric) Record(duration time.Duration) {
 	nanos := duration.Nanoseconds()
-	
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	
+
 	d.count++
 	d.sum += nanos
-	
+
 	if nanos < d.min {
 		d.min = nanos
 	}
@@ -154,12 +154,14 @@ func (d *DurationMetric) Record(duration time.Duration) {
 func (d *DurationMetric) Stats() (count int64, avg, min, max time.Duration) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	
+
 	count = d.count
 	if count > 0 {
 		avg = time.Duration(d.sum / count)
-		min = time.Duration(d.min)
-		max = time.Duration(d.max)
+		minDuration := time.Duration(d.min)
+		min = minDuration
+		maxDuration := time.Duration(d.max)
+		max = maxDuration
 	}
 	return
 }
@@ -167,7 +169,7 @@ func (d *DurationMetric) Stats() (count int64, avg, min, max time.Duration) {
 // Snapshot returns a snapshot of all metrics
 func (m *Metrics) Snapshot() map[string]interface{} {
 	httpCount, httpAvg, httpMin, httpMax := m.HTTPRequestDuration.Stats()
-	
+
 	return map[string]interface{}{
 		"torrents": map[string]int64{
 			"total":       atomic.LoadInt64(&m.TorrentsTotal),
@@ -191,9 +193,9 @@ func (m *Metrics) Snapshot() map[string]interface{} {
 			},
 		},
 		"system": map[string]interface{}{
-			"memory_bytes":    atomic.LoadInt64(&m.MemoryUsage),
-			"goroutines":      atomic.LoadInt32(&m.GoroutineCount),
-			"uptime_seconds":  time.Since(m.StartTime).Seconds(),
+			"memory_bytes":   atomic.LoadInt64(&m.MemoryUsage),
+			"goroutines":     atomic.LoadInt32(&m.GoroutineCount),
+			"uptime_seconds": time.Since(m.StartTime).Seconds(),
 		},
 	}
 }
