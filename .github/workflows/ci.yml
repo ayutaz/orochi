@@ -84,6 +84,10 @@ jobs:
     - name: Build
       run: go build -v ./cmd/orochi
     
+    - name: List files
+      run: ls -la
+      shell: bash
+    
     - name: Test binary
       run: |
         if [[ "$RUNNER_OS" == "Windows" ]]; then

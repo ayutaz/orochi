@@ -9,25 +9,18 @@ linters:
   enable:
     - gofmt
     - goimports
-    - golint
     - govet
     - errcheck
     - staticcheck
     - unused
     - gosimple
-    - structcheck
-    - varcheck
     - ineffassign
-    - deadcode
     - typecheck
     - gosec
-    - megacheck
-    - dupl
     - misspell
     - lll
     - nakedret
     - prealloc
-    - exportloopref
     - gocritic
     - gochecknoinits
     - gocognit
@@ -35,35 +28,20 @@ linters:
     - godox
     - goerr113
     - gofumpt
-    - goheader
-    - gomnd
     - gomodguard
     - goprintffuncname
-    - gosec
-    - ifshort
-    - importas
     - makezero
     - nestif
     - nilerr
-    - nlreturn
     - noctx
     - nolintlint
-    - paralleltest
     - predeclared
-    - promlinter
     - revive
-    - rowserrcheck
-    - sqlclosecheck
     - stylecheck
-    - tagliatelle
     - thelper
-    - tparallel
     - unconvert
     - unparam
-    - wastedassign
     - whitespace
-    - wrapcheck
-    - wsl
 
   disable:
     - exhaustive
@@ -73,6 +51,21 @@ linters:
     - funlen
     - goconst
     - testpackage
+    - wrapcheck
+    - wsl
+    - nlreturn
+    - paralleltest
+    - tparallel
+    - ifshort
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
+    - goheader
+    - tagliatelle
+    - promlinter
+    - importas
+    - exportloopref
+    - gomnd
 
 linters-settings:
   gofmt:

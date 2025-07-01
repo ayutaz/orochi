@@ -1,0 +1,116 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: orochi
+    main: ./cmd/orochi
+    binary: orochi
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: orochi
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - REQUIREMENTS.md
+      - web/**/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+  groups:
+    - title: Features
+      regexp: '^feat'
+    - title: Bug Fixes
+      regexp: '^fix'
+    - title: Performance
+      regexp: '^perf'
+    - title: Refactoring
+      regexp: '^refactor'
+
+release:
+  github:
+    owner: ayutaz
+    name: orochi
+  name_template: "{{.ProjectName}} v{{.Version}}"
+  header: |
+    ## Orochi v{{.Version}}
+    
+    Simple torrent client inspired by BitThief.
+    
+    ### ⚠️ Legal Notice
+    This software is for legal use only. Users are responsible for complying with local laws regarding file sharing.
+    
+  footer: |
+    ## Installation
+    
+    ### Binary
+    Download the appropriate binary for your platform from the assets below.
+    
+    ### Homebrew (macOS/Linux)
+    ```bash
+    brew tap ayutaz/orochi
+    brew install orochi
+    ```
+    
+    ### From Source
+    ```bash
+    go install github.com/ayutaz/orochi/cmd/orochi@v{{.Version}}
+    ```
+    
+    ---
+    **Full Changelog**: https://github.com/ayutaz/orochi/compare/{{.PreviousTag}}...{{.Tag}}
+
+# Homebrew formula template (optional)
+brews:
+  - repository:
+      owner: ayutaz
+      name: homebrew-orochi
+    folder: Formula
+    homepage: "https://github.com/ayutaz/orochi"
+    description: "Simple torrent client written in Go"
+    license: "MIT"
+    test: |
+      system "#{bin}/orochi", "--version"
