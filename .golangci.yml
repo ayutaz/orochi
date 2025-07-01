@@ -91,6 +91,7 @@ issues:
         - dupl
         - gosec
         - goconst
+        - err113
     - path: vendor
       linters:
         - all

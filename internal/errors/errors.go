@@ -2,11 +2,11 @@ package errors
 
 import "fmt"
 
-// ErrorCode represents the type of error
+// ErrorCode represents the type of error.
 type ErrorCode string
 
 const (
-	// ErrCodeNotFound indicates that a resource was not found
+	// ErrCodeNotFound indicates that a resource was not found.
 	ErrCodeNotFound ErrorCode = "NOT_FOUND"
 	
 	// ErrCodeInvalidInput indicates that the input provided was invalid
