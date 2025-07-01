@@ -12,6 +12,8 @@ import (
 )
 
 // TorrentInfo represents parsed torrent information.
+//
+//nolint:revive // TorrentInfo is a well-known term in BitTorrent context
 type TorrentInfo struct {
 	Name        string
 	InfoHash    string

@@ -162,10 +162,15 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	// Get memory stats
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
-	m.SetMemoryUsage(int64(memStats.Alloc))
+	if memStats.Alloc <= 9223372036854775807 { // max int64
+		m.SetMemoryUsage(int64(memStats.Alloc))
+	}
 	
 	// Get goroutine count
-	m.SetGoroutineCount(int32(runtime.NumGoroutine()))
+	numGoroutines := runtime.NumGoroutine()
+	if numGoroutines <= 2147483647 { // max int32
+		m.SetGoroutineCount(int32(numGoroutines))
+	}
 	
 	// Get torrent metrics if manager is available
 	if s.torrentManager != nil {

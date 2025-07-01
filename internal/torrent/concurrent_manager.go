@@ -106,7 +106,7 @@ func (m *ConcurrentManager) ListTorrents() []*Torrent {
 	count := atomic.LoadInt64(&m.count)
 	torrents := make([]*Torrent, 0, count)
 	
-	m.torrents.Range(func(key, value interface{}) bool {
+	m.torrents.Range(func(_, value interface{}) bool {
 		if torrent, ok := value.(*Torrent); ok {
 			torrents = append(torrents, torrent)
 		}

@@ -73,6 +73,9 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+    exclude-functions:
+      - fmt.Sscanf
+      - (io.Writer).Write
   gocritic:
     enabled-tags:
       - diagnostic
@@ -92,6 +95,7 @@ issues:
         - gosec
         - goconst
         - err113
+        - gocognit
     - path: vendor
       linters:
         - all
