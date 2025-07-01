@@ -16,7 +16,7 @@ type Server struct {
 	config         *config.Config
 	httpServer     *http.Server
 	mux            *http.ServeMux
-	torrentManager *torrent.Manager
+	torrentManager torrent.Manager
 }
 
 // NewServer creates a new HTTP server.
@@ -42,7 +42,7 @@ func NewServer(cfg *config.Config) *Server {
 }
 
 // SetTorrentManager sets the torrent manager for the server.
-func (s *Server) SetTorrentManager(tm *torrent.Manager) {
+func (s *Server) SetTorrentManager(tm torrent.Manager) {
 	s.torrentManager = tm
 }
 

@@ -3,12 +3,11 @@ package torrent
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/ayutaz/orochi/internal/errors"
 	"github.com/zeebo/bencode"
 )
 
@@ -52,24 +51,24 @@ func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 	var torrent bencodeTorrent
 	
 	if err := bencode.DecodeBytes(data, &torrent); err != nil {
-		return nil, fmt.Errorf("failed to decode torrent: %w", err)
+		return nil, errors.ParseError("failed to decode torrent file", err)
 	}
 	
 	// Validate required fields
 	if torrent.Info.Name == "" {
-		return nil, errors.New("torrent missing required field: name")
+		return nil, errors.InvalidInput("torrent missing required field: name")
 	}
 	if torrent.Info.PieceLength == 0 {
-		return nil, errors.New("torrent missing required field: piece length")
+		return nil, errors.InvalidInput("torrent missing required field: piece length")
 	}
 	if torrent.Info.Pieces == "" {
-		return nil, errors.New("torrent missing required field: pieces")
+		return nil, errors.InvalidInput("torrent missing required field: pieces")
 	}
 	
 	// Calculate info hash
 	infoBencode, err := bencode.EncodeBytes(torrent.Info)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode info dict: %w", err)
+		return nil, errors.InternalWithError("failed to encode info dict", err)
 	}
 	
 	h := sha1.New()
@@ -104,13 +103,13 @@ func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 // ParseMagnetLink parses a magnet link and returns its information.
 func ParseMagnetLink(magnetLink string) (*TorrentInfo, error) {
 	if !strings.HasPrefix(magnetLink, "magnet:?") {
-		return nil, errors.New("invalid magnet link format")
+		return nil, errors.InvalidInput("invalid magnet link format")
 	}
 	
 	// Parse query parameters
 	u, err := url.Parse(magnetLink)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse magnet link: %w", err)
+		return nil, errors.ParseError("failed to parse magnet link", err)
 	}
 	
 	params := u.Query()
@@ -118,23 +117,23 @@ func ParseMagnetLink(magnetLink string) (*TorrentInfo, error) {
 	// Extract info hash (required)
 	xt := params.Get("xt")
 	if xt == "" {
-		return nil, errors.New("magnet link missing required parameter: xt")
+		return nil, errors.InvalidInput("magnet link missing required parameter: xt")
 	}
 	
 	// Parse xt parameter (e.g., "urn:btih:1234567890abcdef...")
 	if !strings.HasPrefix(xt, "urn:btih:") {
-		return nil, errors.New("invalid xt parameter format")
+		return nil, errors.InvalidInput("invalid xt parameter format")
 	}
 	
 	infoHash := strings.TrimPrefix(xt, "urn:btih:")
 	if len(infoHash) != 40 && len(infoHash) != 32 {
-		return nil, errors.New("invalid info hash length")
+		return nil, errors.InvalidInputf("invalid info hash length: %d", len(infoHash))
 	}
 	
 	// Convert base32 to hex if necessary
 	if len(infoHash) == 32 {
 		// TODO: Implement base32 to hex conversion
-		return nil, errors.New("base32 info hash not yet supported")
+		return nil, errors.InvalidInput("base32 info hash not yet supported")
 	}
 	
 	info := &TorrentInfo{

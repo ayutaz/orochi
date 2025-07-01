@@ -2,10 +2,11 @@ package web
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	
+	"github.com/ayutaz/orochi/internal/errors"
 )
 
 // APIError represents an API error response.
@@ -60,7 +61,11 @@ func (s *Server) handleAPITorrents(w http.ResponseWriter, r *http.Request) {
 
 		id, err := s.torrentManager.AddTorrent(data)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("failed to add torrent: %v", err))
+			if errors.IsInvalidInput(err) {
+				writeError(w, http.StatusBadRequest, err.Error())
+			} else {
+				writeError(w, http.StatusInternalServerError, "failed to add torrent")
+			}
 			return
 		}
 
@@ -101,7 +106,11 @@ func (s *Server) handleAPITorrentMagnet(w http.ResponseWriter, r *http.Request) 
 
 	id, err := s.torrentManager.AddMagnet(req.Magnet)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("failed to add magnet: %v", err))
+		if errors.IsInvalidInput(err) {
+			writeError(w, http.StatusBadRequest, err.Error())
+		} else {
+			writeError(w, http.StatusInternalServerError, "failed to add magnet")
+		}
 		return
 	}
 
@@ -146,7 +155,11 @@ func (s *Server) handleAPITorrent(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		// Remove torrent
 		if err := s.torrentManager.RemoveTorrent(id); err != nil {
-			writeError(w, http.StatusNotFound, "torrent not found")
+			if errors.IsNotFound(err) {
+				writeError(w, http.StatusNotFound, err.Error())
+			} else {
+				writeError(w, http.StatusInternalServerError, "failed to remove torrent")
+			}
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -168,14 +181,22 @@ func (s *Server) handleTorrentOperation(w http.ResponseWriter, r *http.Request, 
 	switch operation {
 	case "start":
 		if err := s.torrentManager.StartTorrent(id); err != nil {
-			writeError(w, http.StatusNotFound, "torrent not found")
+			if errors.IsNotFound(err) {
+				writeError(w, http.StatusNotFound, err.Error())
+			} else {
+				writeError(w, http.StatusInternalServerError, "failed to start torrent")
+			}
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "started"})
 
 	case "stop":
 		if err := s.torrentManager.StopTorrent(id); err != nil {
-			writeError(w, http.StatusNotFound, "torrent not found")
+			if errors.IsNotFound(err) {
+				writeError(w, http.StatusNotFound, err.Error())
+			} else {
+				writeError(w, http.StatusInternalServerError, "failed to stop torrent")
+			}
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "stopped"})

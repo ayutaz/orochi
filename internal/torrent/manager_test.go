@@ -13,10 +13,7 @@ func TestNewManager(t *testing.T) {
 			t.Fatal("manager should not be nil")
 		}
 		
-		if manager.torrents == nil {
-			t.Error("torrents map should be initialized")
-		}
-		
+		// Check initialization by behavior, not internals
 		if manager.Count() != 0 {
 			t.Errorf("expected 0 torrents, got %d", manager.Count())
 		}

@@ -1,9 +1,10 @@
 package torrent
 
 import (
-	"errors"
 	"sync"
 	"time"
+	
+	"github.com/ayutaz/orochi/internal/errors"
 )
 
 // TorrentStatus represents the status of a torrent.
@@ -32,21 +33,21 @@ type Torrent struct {
 	Error      string         `json:"error,omitempty"`
 }
 
-// Manager manages all torrents.
-type Manager struct {
+// manager implements the Manager interface.
+type manager struct {
 	mu       sync.RWMutex
 	torrents map[string]*Torrent
 }
 
 // NewManager creates a new torrent manager.
-func NewManager() *Manager {
-	return &Manager{
+func NewManager() Manager {
+	return &manager{
 		torrents: make(map[string]*Torrent),
 	}
 }
 
 // AddTorrent adds a torrent from torrent file data.
-func (m *Manager) AddTorrent(data []byte) (string, error) {
+func (m *manager) AddTorrent(data []byte) (string, error) {
 	info, err := ParseTorrentFile(data)
 	if err != nil {
 		return "", err
@@ -75,7 +76,7 @@ func (m *Manager) AddTorrent(data []byte) (string, error) {
 }
 
 // AddMagnet adds a torrent from a magnet link.
-func (m *Manager) AddMagnet(magnetLink string) (string, error) {
+func (m *manager) AddMagnet(magnetLink string) (string, error) {
 	info, err := ParseMagnetLink(magnetLink)
 	if err != nil {
 		return "", err
@@ -104,12 +105,12 @@ func (m *Manager) AddMagnet(magnetLink string) (string, error) {
 }
 
 // RemoveTorrent removes a torrent.
-func (m *Manager) RemoveTorrent(id string) error {
+func (m *manager) RemoveTorrent(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	
 	if _, exists := m.torrents[id]; !exists {
-		return errors.New("torrent not found")
+		return errors.NotFoundf("torrent with id %s not found", id)
 	}
 	
 	// TODO: Stop torrent if running
@@ -120,7 +121,7 @@ func (m *Manager) RemoveTorrent(id string) error {
 }
 
 // GetTorrent returns a torrent by ID.
-func (m *Manager) GetTorrent(id string) (*Torrent, bool) {
+func (m *manager) GetTorrent(id string) (*Torrent, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	
@@ -129,7 +130,7 @@ func (m *Manager) GetTorrent(id string) (*Torrent, bool) {
 }
 
 // ListTorrents returns all torrents.
-func (m *Manager) ListTorrents() []*Torrent {
+func (m *manager) ListTorrents() []*Torrent {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	
@@ -142,7 +143,7 @@ func (m *Manager) ListTorrents() []*Torrent {
 }
 
 // Count returns the number of torrents.
-func (m *Manager) Count() int {
+func (m *manager) Count() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	
@@ -150,13 +151,13 @@ func (m *Manager) Count() int {
 }
 
 // StartTorrent starts downloading a torrent.
-func (m *Manager) StartTorrent(id string) error {
+func (m *manager) StartTorrent(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	
 	torrent, exists := m.torrents[id]
 	if !exists {
-		return errors.New("torrent not found")
+		return errors.NotFoundf("torrent with id %s not found", id)
 	}
 	
 	// TODO: Actually start the torrent download
@@ -166,13 +167,13 @@ func (m *Manager) StartTorrent(id string) error {
 }
 
 // StopTorrent stops a torrent.
-func (m *Manager) StopTorrent(id string) error {
+func (m *manager) StopTorrent(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	
 	torrent, exists := m.torrents[id]
 	if !exists {
-		return errors.New("torrent not found")
+		return errors.NotFoundf("torrent with id %s not found", id)
 	}
 	
 	// TODO: Actually stop the torrent
