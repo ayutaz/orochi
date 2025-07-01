@@ -28,7 +28,7 @@ type Client struct {
 func NewClient(cfg *config.Config, log logger.Logger) (*Client, error) {
 	clientConfig := torrent.NewDefaultClientConfig()
 	clientConfig.DataDir = cfg.GetAbsoluteDownloadDir()
-	clientConfig.ListenPort = cfg.Port
+	clientConfig.ListenPort = 6881 // BitTorrent default port
 	clientConfig.Seed = true
 	// clientConfig.Logger = log // TODO: implement logger adapter
 
