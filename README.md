@@ -55,6 +55,26 @@ make test
 make coverage
 ```
 
+## Documentation
+
+### User Guide
+
+For detailed usage instructions, please see the [User Guide](docs/USER_GUIDE.md) (日本語).
+
+### API Documentation
+
+Once the server is running, you can access the interactive API documentation at:
+
+```
+http://localhost:8080/api-docs
+```
+
+The API documentation is generated using OpenAPI 3.0 specification and provides:
+- Complete API reference with all endpoints
+- Request/response schemas
+- Interactive API testing interface (Swagger UI)
+- WebSocket endpoint documentation
+
 ## Legal Notice
 
 This software is designed for downloading and sharing files using the BitTorrent protocol. The use of this software for downloading or distributing copyrighted material without permission is illegal. Users are responsible for complying with local laws and regulations.

@@ -1,0 +1,812 @@
+openapi: 3.0.3
+info:
+  title: Orochi API
+  description: |
+    Orochi is a BitTorrent client with a modern web interface.
+    This API allows you to manage torrents, configure settings, and monitor download/upload activity.
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Default local server
+
+tags:
+  - name: torrents
+    description: Torrent management operations
+  - name: settings
+    description: Application settings
+  - name: vpn
+    description: VPN configuration and status
+  - name: websocket
+    description: WebSocket endpoints for real-time updates
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Invalid torrent file"
+
+    TorrentInfo:
+      type: object
+      required:
+        - name
+        - infoHash
+        - totalSize
+        - pieceLength
+        - numPieces
+        - files
+        - createdAt
+      properties:
+        name:
+          type: string
+          example: "Ubuntu 22.04 LTS"
+        infoHash:
+          type: string
+          example: "1234567890abcdef1234567890abcdef12345678"
+        totalSize:
+          type: integer
+          format: int64
+          example: 3825205248
+        pieceLength:
+          type: integer
+          example: 262144
+        numPieces:
+          type: integer
+          example: 14600
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileInfo'
+        announce:
+          type: array
+          items:
+            type: string
+          example: ["http://tracker.example.com:6969/announce"]
+        comment:
+          type: string
+          example: "Ubuntu Desktop 22.04 LTS"
+        createdBy:
+          type: string
+          example: "mktorrent 1.1"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-04-21T10:00:00Z"
+
+    FileInfo:
+      type: object
+      required:
+        - path
+        - size
+      properties:
+        path:
+          type: string
+          example: "ubuntu-22.04-desktop-amd64.iso"
+        size:
+          type: integer
+          format: int64
+          example: 3825205248
+        selected:
+          type: boolean
+          default: true
+          example: true
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+          example: "normal"
+
+    Torrent:
+      type: object
+      required:
+        - id
+        - info
+        - status
+        - progress
+        - downloaded
+        - uploaded
+        - downloadRate
+        - uploadRate
+        - addedAt
+      properties:
+        id:
+          type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        info:
+          $ref: '#/components/schemas/TorrentInfo'
+        status:
+          type: string
+          enum: [pending, downloading, seeding, paused, stopped, error]
+          example: "downloading"
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.75
+        downloaded:
+          type: integer
+          format: int64
+          example: 2868903936
+        uploaded:
+          type: integer
+          format: int64
+          example: 1073741824
+        downloadRate:
+          type: integer
+          format: int64
+          example: 5242880
+        uploadRate:
+          type: integer
+          format: int64
+          example: 1048576
+        addedAt:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:00:00Z"
+        error:
+          type: string
+          example: ""
+
+    Settings:
+      type: object
+      properties:
+        language:
+          type: string
+          enum: [en, ja]
+          default: ja
+          example: "ja"
+        theme:
+          type: string
+          enum: [light, dark]
+          default: light
+          example: "dark"
+        downloadPath:
+          type: string
+          example: "./downloads"
+        maxConnections:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 200
+          example: 200
+        port:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+          default: 6881
+          example: 6881
+        maxDownloadSpeed:
+          type: integer
+          minimum: 0
+          description: Maximum download speed in bytes/sec (0 = unlimited)
+          default: 0
+          example: 10485760
+        maxUploadSpeed:
+          type: integer
+          minimum: 0
+          description: Maximum upload speed in bytes/sec (0 = unlimited)
+          default: 0
+          example: 5242880
+        dht:
+          type: boolean
+          default: true
+          example: true
+        peerExchange:
+          type: boolean
+          default: true
+          example: true
+        localPeerDiscovery:
+          type: boolean
+          default: true
+          example: true
+        maxUploadSize:
+          type: integer
+          description: Maximum torrent file upload size in bytes
+          default: 10485760
+          example: 10485760
+
+    VPNConfig:
+      type: object
+      required:
+        - enabled
+        - kill_switch
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        interface_name:
+          type: string
+          example: "tun0"
+        kill_switch:
+          type: boolean
+          example: true
+
+    VPNStatus:
+      type: object
+      required:
+        - enabled
+        - active
+        - interface_name
+        - kill_switch
+        - interfaces
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        active:
+          type: boolean
+          example: true
+        interface_name:
+          type: string
+          example: "tun0"
+        kill_switch:
+          type: boolean
+          example: true
+        last_check:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:00:00Z"
+        interfaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkInterface'
+
+    NetworkInterface:
+      type: object
+      required:
+        - name
+        - index
+        - addresses
+        - is_vpn
+        - is_up
+      properties:
+        name:
+          type: string
+          example: "tun0"
+        index:
+          type: integer
+          example: 3
+        addresses:
+          type: array
+          items:
+            type: string
+          example: ["10.8.0.2/24", "fe80::1/64"]
+        is_vpn:
+          type: boolean
+          example: true
+        is_up:
+          type: boolean
+          example: true
+
+    FileUpdateRequest:
+      type: object
+      required:
+        - files
+      properties:
+        files:
+          type: array
+          items:
+            type: object
+            required:
+              - path
+              - selected
+            properties:
+              path:
+                type: string
+                example: "ubuntu-22.04-desktop-amd64.iso"
+              selected:
+                type: boolean
+                example: true
+              priority:
+                type: string
+                enum: [low, normal, high]
+                example: "normal"
+
+    AddMagnetRequest:
+      type: object
+      required:
+        - magnet
+      properties:
+        magnet:
+          type: string
+          example: "magnet:?xt=urn:btih:1234567890abcdef1234567890abcdef12345678&dn=Ubuntu+22.04+LTS"
+
+paths:
+  /api/torrents:
+    get:
+      tags:
+        - torrents
+      summary: List all torrents
+      description: Returns a list of all torrents with their current status
+      operationId: listTorrents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Torrent'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - torrents
+      summary: Add a new torrent
+      description: Upload a torrent file to start downloading
+      operationId: addTorrent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - torrent
+              properties:
+                torrent:
+                  type: string
+                  format: binary
+                  description: Torrent file to upload
+      responses:
+        '201':
+          description: Torrent added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/torrents/magnet:
+    post:
+      tags:
+        - torrents
+      summary: Add a magnet link
+      description: Add a torrent using a magnet link
+      operationId: addMagnet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMagnetRequest'
+      responses:
+        '201':
+          description: Magnet link added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/torrents/{id}:
+    get:
+      tags:
+        - torrents
+      summary: Get torrent details
+      description: Returns detailed information about a specific torrent
+      operationId: getTorrent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Torrent ID
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Torrent'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Torrent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - torrents
+      summary: Remove a torrent
+      description: Stop and remove a torrent from the client
+      operationId: deleteTorrent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Torrent ID
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '204':
+          description: Torrent removed successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Torrent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/torrents/{id}/start:
+    post:
+      tags:
+        - torrents
+      summary: Start a torrent
+      description: Resume downloading/seeding a paused torrent
+      operationId: startTorrent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Torrent ID
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Torrent started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "started"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Torrent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/torrents/{id}/stop:
+    post:
+      tags:
+        - torrents
+      summary: Stop a torrent
+      description: Pause downloading/seeding a torrent
+      operationId: stopTorrent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Torrent ID
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Torrent stopped successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "stopped"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Torrent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/torrents/{id}/files:
+    put:
+      tags:
+        - torrents
+      summary: Update file selection
+      description: Select or deselect files within a torrent for downloading
+      operationId: updateFiles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Torrent ID
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileUpdateRequest'
+      responses:
+        '200':
+          description: File selection updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Torrent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/settings:
+    get:
+      tags:
+        - settings
+      summary: Get application settings
+      description: Returns the current application settings
+      operationId: getSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - settings
+      summary: Update application settings
+      description: Update application settings
+      operationId: updateSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/vpn/status:
+    get:
+      tags:
+        - vpn
+      summary: Get VPN status
+      description: Returns the current VPN status and available network interfaces
+      operationId: getVPNStatus
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VPNStatus'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/vpn/config:
+    put:
+      tags:
+        - vpn
+      summary: Update VPN configuration
+      description: Update VPN binding configuration
+      operationId: updateVPNConfig
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VPNConfig'
+      responses:
+        '200':
+          description: VPN configuration updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ws:
+    get:
+      tags:
+        - websocket
+      summary: WebSocket endpoint
+      description: |
+        WebSocket endpoint for real-time updates.
+        
+        Message types:
+        - `torrent_update`: Notification that torrent data has changed
+        - `torrents`: Full torrent list data
+        
+        Example messages:
+        ```json
+        {
+          "type": "torrent_update",
+          "data": {
+            "timestamp": "2023-12-01T10:00:00Z"
+          }
+        }
+        ```
+        ```json
+        {
+          "type": "torrents",
+          "data": [/* array of torrent objects */]
+        }
+        ```
+      operationId: websocket
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '101':
+          description: Switching Protocols
+        '401':
+          description: Unauthorized
+        '426':
+          description: Upgrade Required

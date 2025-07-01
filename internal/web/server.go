@@ -128,6 +128,10 @@ func (s *Server) setupRoutes() {
 	// WebSocket endpoint
 	s.router.GET("/ws", s.wrapHandler(s.handleWebSocket))
 
+	// API documentation
+	s.router.GET("/api-docs", s.wrapHandler(s.handleAPIDocs))
+	s.router.GET("/api-docs/*", s.wrapHandler(s.handleAPIDocsStatic))
+
 	// Web UI
 	s.router.GET("/", s.wrapHandler(s.handleHome))
 	s.router.GET("/*", s.wrapHandler(s.handleStatic))
