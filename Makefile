@@ -27,8 +27,8 @@ coverage:
 
 # Run linter
 lint:
-	@which golangci-lint > /dev/null || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
-	golangci-lint run
+	@which golangci-lint > /dev/null || which ~/go/bin/golangci-lint > /dev/null || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	@(golangci-lint run 2>/dev/null || ~/go/bin/golangci-lint run)
 
 # Run tests in watch mode
 test-watch:

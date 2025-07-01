@@ -9,15 +9,15 @@ func TestLoadDefault(t *testing.T) {
 	t.Run("デフォルト設定を読み込める", func(t *testing.T) {
 		// Red phase: このテストは現在失敗する
 		config := LoadDefault()
-		
+
 		if config == nil {
 			t.Fatal("config should not be nil")
 		}
-		
+
 		if config.Port != 8080 {
 			t.Errorf("expected port 8080, got %d", config.Port)
 		}
-		
+
 		if config.DownloadDir == "" {
 			t.Error("download directory should not be empty")
 		}
@@ -87,21 +87,21 @@ func TestConfig_GetAbsoluteDownloadDir(t *testing.T) {
 		config := &Config{
 			DownloadDir: "./downloads",
 		}
-		
+
 		absPath := config.GetAbsoluteDownloadDir()
-		
+
 		if !filepath.IsAbs(absPath) {
 			t.Errorf("expected absolute path, got %s", absPath)
 		}
 	})
-	
+
 	t.Run("既に絶対パスの場合はそのまま返す", func(t *testing.T) {
 		config := &Config{
 			DownloadDir: "/tmp/downloads",
 		}
-		
+
 		absPath := config.GetAbsoluteDownloadDir()
-		
+
 		if absPath != "/tmp/downloads" {
 			t.Errorf("expected /tmp/downloads, got %s", absPath)
 		}

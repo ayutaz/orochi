@@ -14,7 +14,7 @@ func TestLoader_LoadFromFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmpDir)
-	
+
 	configPath := filepath.Join(tmpDir, "config.json")
 	testConfig := &Config{
 		Port:        9999,
@@ -22,27 +22,27 @@ func TestLoader_LoadFromFile(t *testing.T) {
 		MaxTorrents: 20,
 		MaxPeers:    500,
 	}
-	
+
 	data, err := json.Marshal(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
-		t.Fatal(err)
+
+	if writeErr := os.WriteFile(configPath, data, 0o644); writeErr != nil {
+		t.Fatal(writeErr)
 	}
-	
+
 	// Create loader with custom path
 	loader := &Loader{
 		configPaths: []string{configPath},
 		envPrefix:   "TEST_OROCHI_",
 	}
-	
+
 	config, err := loader.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	if config.Port != 9999 {
 		t.Errorf("expected port 9999, got %d", config.Port)
 	}
@@ -64,7 +64,7 @@ func TestLoader_LoadFromEnv(t *testing.T) {
 	os.Setenv("TEST_OROCHI_MAX_TORRENTS", "30")
 	os.Setenv("TEST_OROCHI_MAX_PEERS", "600")
 	os.Setenv("TEST_OROCHI_VPN_INTERFACE", "tun0")
-	
+
 	defer func() {
 		os.Unsetenv("TEST_OROCHI_PORT")
 		os.Unsetenv("TEST_OROCHI_DOWNLOAD_DIR")
@@ -72,17 +72,17 @@ func TestLoader_LoadFromEnv(t *testing.T) {
 		os.Unsetenv("TEST_OROCHI_MAX_PEERS")
 		os.Unsetenv("TEST_OROCHI_VPN_INTERFACE")
 	}()
-	
+
 	loader := &Loader{
 		configPaths: []string{}, // No config files
 		envPrefix:   "TEST_OROCHI_",
 	}
-	
+
 	config, err := loader.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	if config.Port != 7777 {
 		t.Errorf("expected port 7777, got %d", config.Port)
 	}
@@ -106,7 +106,7 @@ func TestSaveConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmpDir)
-	
+
 	config := &Config{
 		Port:         8888,
 		DownloadDir:  "/saved/downloads",
@@ -114,29 +114,29 @@ func TestSaveConfig(t *testing.T) {
 		MaxPeers:     300,
 		VPNInterface: "vpn0",
 	}
-	
+
 	configPath := filepath.Join(tmpDir, "subdir", "config.json")
-	
-	if err := SaveConfig(config, configPath); err != nil {
-		t.Fatal(err)
+
+	if saveErr := SaveConfig(config, configPath); saveErr != nil {
+		t.Fatal(saveErr)
 	}
-	
+
 	// Verify file exists
-	if _, err := os.Stat(configPath); err != nil {
+	if _, statErr := os.Stat(configPath); statErr != nil {
 		t.Error("config file not created")
 	}
-	
+
 	// Load and verify
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	var loaded Config
 	if err := json.Unmarshal(data, &loaded); err != nil {
 		t.Fatal(err)
 	}
-	
+
 	if loaded.Port != config.Port {
 		t.Errorf("saved port mismatch: expected %d, got %d", config.Port, loaded.Port)
 	}
@@ -157,7 +157,7 @@ func TestParsePort(t *testing.T) {
 		{"65535", 65535},
 		{"99999", 99999}, // Will be caught by validation
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := parsePort(tt.input)
@@ -179,7 +179,7 @@ func TestParseInt(t *testing.T) {
 		{"", 0},
 		{"-5", -5},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := parseInt(tt.input)

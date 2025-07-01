@@ -4,37 +4,37 @@ import (
 	"context"
 	"net/http"
 	"time"
-	
+
 	"github.com/ayutaz/orochi/internal/logger"
 	"github.com/ayutaz/orochi/internal/metrics"
 )
 
-// contextKey is a type for context keys to avoid collisions
+// contextKey is a type for context keys to avoid collisions.
 type contextKey string
 
 const (
-	// requestIDKey is the context key for request ID
+	// requestIDKey is the context key for request ID.
 	requestIDKey contextKey = "request_id"
 )
 
-// Middleware is a function that wraps an HTTP handler
+// Middleware is a function that wraps an HTTP handler.
 type Middleware func(http.Handler) http.Handler
 
-// LoggingMiddleware logs HTTP requests
+// LoggingMiddleware logs HTTP requests.
 func LoggingMiddleware(log logger.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			
+
 			// Wrap response writer to capture status code
 			wrapped := &responseWriter{
 				ResponseWriter: w,
 				statusCode:     http.StatusOK,
 			}
-			
+
 			// Process request
 			next.ServeHTTP(wrapped, r)
-			
+
 			// Log request
 			duration := time.Since(start)
 			log.Info("HTTP request",
@@ -44,7 +44,7 @@ func LoggingMiddleware(log logger.Logger) Middleware {
 				logger.Duration("duration", duration),
 				logger.String("remote_addr", r.RemoteAddr),
 			)
-			
+
 			// Update metrics
 			m := metrics.Get()
 			m.IncrementHTTPRequests()
@@ -56,14 +56,14 @@ func LoggingMiddleware(log logger.Logger) Middleware {
 	}
 }
 
-// RecoveryMiddleware recovers from panics
+// RecoveryMiddleware recovers from panics.
 func RecoveryMiddleware(log logger.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
 					// Convert panic value to string
-					errStr := "unknown panic"
+					var errStr string
 					switch v := err.(type) {
 					case string:
 						errStr = v
@@ -72,7 +72,7 @@ func RecoveryMiddleware(log logger.Logger) Middleware {
 					default:
 						errStr = "panic occurred"
 					}
-					
+
 					log.Error("panic recovered",
 						logger.String("error", errStr),
 						logger.String("method", r.Method),
@@ -81,19 +81,19 @@ func RecoveryMiddleware(log logger.Logger) Middleware {
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				}
 			}()
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-// CORSMiddleware adds CORS headers
+// CORSMiddleware adds CORS headers.
 func CORSMiddleware(allowedOrigins []string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 			allowed := false
-			
+
 			// Check if origin is allowed
 			for _, allowedOrigin := range allowedOrigins {
 				if allowedOrigin == "*" || allowedOrigin == origin {
@@ -101,44 +101,44 @@ func CORSMiddleware(allowedOrigins []string) Middleware {
 					break
 				}
 			}
-			
+
 			if allowed {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			}
-			
+
 			// Handle preflight requests
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-// RequestIDMiddleware adds a request ID to the context
+// RequestIDMiddleware adds a request ID to the context.
 func RequestIDMiddleware() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Simple request ID generation
 			requestID := generateRequestID()
-			
+
 			// Add to context
 			ctx := r.Context()
 			ctx = context.WithValue(ctx, requestIDKey, requestID)
-			
+
 			// Add to response header
 			w.Header().Set("X-Request-ID", requestID)
-			
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// RequireTorrentManager ensures the torrent manager is initialized
+// RequireTorrentManager ensures the torrent manager is initialized.
 func RequireTorrentManager(s *Server) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -151,7 +151,7 @@ func RequireTorrentManager(s *Server) Middleware {
 	}
 }
 
-// responseWriter wraps http.ResponseWriter to capture the status code
+// responseWriter wraps http.ResponseWriter to capture the status code.
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -173,13 +173,13 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return rw.ResponseWriter.Write(b)
 }
 
-// generateRequestID generates a simple request ID
+// generateRequestID generates a simple request ID.
 func generateRequestID() string {
 	// Simple implementation - in production, use UUID
 	return time.Now().Format("20060102150405") + "-" + generateRandomString(8)
 }
 
-// generateRandomString generates a random string of given length
+// generateRandomString generates a random string of given length.
 func generateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, length)

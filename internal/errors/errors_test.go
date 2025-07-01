@@ -132,11 +132,11 @@ func TestErrorConstructors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.fn()
-			
+
 			if err.Code != tt.code {
 				t.Errorf("expected code %s, got %s", tt.code, err.Code)
 			}
-			
+
 			if !strings.Contains(err.Error(), tt.contains) {
 				t.Errorf("error message should contain %q, got %q", tt.contains, err.Error())
 			}

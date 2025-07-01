@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	// Version information (set during build)
+	// Version information (set during build).
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
@@ -26,7 +26,6 @@ func main() {
 		port        int
 		downloadDir string
 	)
-	
 	flag.BoolVar(&showVersion, "version", false, "Show version information")
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
 	flag.StringVar(&downloadDir, "download-dir", "./downloads", "Download directory")
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	// Create download directory if it doesn't exist
-	if err := os.MkdirAll(cfg.GetAbsoluteDownloadDir(), 0755); err != nil {
+	if err := os.MkdirAll(cfg.GetAbsoluteDownloadDir(), 0o755); err != nil {
 		log.Fatalf("Failed to create download directory: %v", err)
 	}
 

@@ -7,10 +7,10 @@ import (
 
 // Validation errors.
 var (
-	ErrInvalidPort      = errors.New("invalid port number: must be between 1 and 65535")
-	ErrEmptyDownloadDir = errors.New("download directory cannot be empty")
+	ErrInvalidPort        = errors.New("invalid port number: must be between 1 and 65535")
+	ErrEmptyDownloadDir   = errors.New("download directory cannot be empty")
 	ErrInvalidMaxTorrents = errors.New("max torrents must be at least 1")
-	ErrInvalidMaxPeers = errors.New("max peers must be at least 1")
+	ErrInvalidMaxPeers    = errors.New("max peers must be at least 1")
 )
 
 // Config represents the application configuration.
@@ -37,19 +37,19 @@ func (c *Config) Validate() error {
 	if c.Port < 1 || c.Port > 65535 {
 		return ErrInvalidPort
 	}
-	
+
 	if c.DownloadDir == "" {
 		return ErrEmptyDownloadDir
 	}
-	
+
 	if c.MaxTorrents < 1 {
 		return ErrInvalidMaxTorrents
 	}
-	
+
 	if c.MaxPeers < 1 {
 		return ErrInvalidMaxPeers
 	}
-	
+
 	return nil
 }
 
@@ -58,12 +58,12 @@ func (c *Config) GetAbsoluteDownloadDir() string {
 	if filepath.IsAbs(c.DownloadDir) {
 		return c.DownloadDir
 	}
-	
+
 	absPath, err := filepath.Abs(c.DownloadDir)
 	if err != nil {
 		// If we can't get absolute path, return the original
 		return c.DownloadDir
 	}
-	
+
 	return absPath
 }

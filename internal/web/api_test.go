@@ -19,7 +19,7 @@ func TestAPI_Torrents(t *testing.T) {
 	server.SetTorrentManager(manager)
 
 	t.Run("GET /api/torrents - 空のリストを返す", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/torrents", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/torrents", http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)
@@ -42,17 +42,17 @@ func TestAPI_Torrents(t *testing.T) {
 		// Create multipart form data with torrent file
 		var buf bytes.Buffer
 		writer := multipart.NewWriter(&buf)
-		
+
 		part, err := writer.CreateFormFile("torrent", "test.torrent")
 		if err != nil {
 			t.Fatalf("failed to create form file: %v", err)
 		}
-		
+
 		torrentData := torrent.CreateTestTorrent()
 		if _, err := part.Write(torrentData); err != nil {
 			t.Fatalf("failed to write torrent data: %v", err)
 		}
-		
+
 		if err := writer.Close(); err != nil {
 			t.Fatalf("failed to close writer: %v", err)
 		}
@@ -81,7 +81,7 @@ func TestAPI_Torrents(t *testing.T) {
 		body := map[string]string{
 			"magnet": "magnet:?xt=urn:btih:1234567890abcdef1234567890abcdef12345678&dn=test.txt",
 		}
-		
+
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
 			t.Fatalf("failed to marshal JSON: %v", err)
@@ -118,7 +118,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 	id, _ := manager.AddTorrent(torrentData)
 
 	t.Run("GET /api/torrents/:id - 特定のトレントを取得", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/torrents/"+id, nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/torrents/"+id, http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)
@@ -138,7 +138,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 	})
 
 	t.Run("POST /api/torrents/:id/start - トレントを開始", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/torrents/"+id+"/start", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/torrents/"+id+"/start", http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)
@@ -155,7 +155,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 	})
 
 	t.Run("POST /api/torrents/:id/stop - トレントを停止", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/torrents/"+id+"/stop", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/torrents/"+id+"/stop", http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)
@@ -172,7 +172,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 	})
 
 	t.Run("DELETE /api/torrents/:id - トレントを削除", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodDelete, "/api/torrents/"+id, nil)
+		req := httptest.NewRequest(http.MethodDelete, "/api/torrents/"+id, http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)
@@ -188,7 +188,7 @@ func TestAPI_TorrentOperations(t *testing.T) {
 	})
 
 	t.Run("GET /api/torrents/:id - 存在しないトレント", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/torrents/nonexistent", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/torrents/nonexistent", http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)

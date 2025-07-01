@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	
+
 	"github.com/ayutaz/orochi/internal/logger"
 )
 
@@ -17,20 +17,20 @@ func TestLoggingMiddleware(t *testing.T) {
 		Output:     &buf,
 		TimeFormat: "2006-01-02",
 	})
-	
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
-	
+
 	middleware := LoggingMiddleware(log)
 	wrapped := middleware(handler)
-	
-	req := httptest.NewRequest("GET", "/test", nil)
+
+	req := httptest.NewRequest("GET", "/test", http.NoBody)
 	rec := httptest.NewRecorder()
-	
+
 	wrapped.ServeHTTP(rec, req)
-	
+
 	output := buf.String()
 	if !strings.Contains(output, "HTTP request") {
 		t.Error("log output missing HTTP request message")
@@ -53,23 +53,23 @@ func TestRecoveryMiddleware(t *testing.T) {
 		Output:     &buf,
 		TimeFormat: "2006-01-02",
 	})
-	
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic")
 	})
-	
+
 	middleware := RecoveryMiddleware(log)
 	wrapped := middleware(handler)
-	
-	req := httptest.NewRequest("GET", "/test", nil)
+
+	req := httptest.NewRequest("GET", "/test", http.NoBody)
 	rec := httptest.NewRecorder()
-	
+
 	wrapped.ServeHTTP(rec, req)
-	
+
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("expected status 500, got %d", rec.Code)
 	}
-	
+
 	output := buf.String()
 	if !strings.Contains(output, "panic recovered") {
 		t.Error("log output missing panic recovered message")
@@ -121,28 +121,28 @@ func TestCORSMiddleware(t *testing.T) {
 			expectStatus:   http.StatusNoContent,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
-			
+
 			middleware := CORSMiddleware(tt.allowedOrigins)
 			wrapped := middleware(handler)
-			
-			req := httptest.NewRequest(tt.method, "/test", nil)
+
+			req := httptest.NewRequest(tt.method, "/test", http.NoBody)
 			if tt.origin != "" {
 				req.Header.Set("Origin", tt.origin)
 			}
 			rec := httptest.NewRecorder()
-			
+
 			wrapped.ServeHTTP(rec, req)
-			
+
 			if rec.Code != tt.expectStatus {
 				t.Errorf("expected status %d, got %d", tt.expectStatus, rec.Code)
 			}
-			
+
 			corsHeader := rec.Header().Get("Access-Control-Allow-Origin")
 			if tt.expectHeader && corsHeader == "" {
 				t.Error("expected CORS header but got none")
@@ -156,21 +156,21 @@ func TestCORSMiddleware(t *testing.T) {
 
 func TestRequestIDMiddleware(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqID := r.Context().Value("request_id")
+		reqID := r.Context().Value(requestIDKey)
 		if reqID == nil {
 			t.Error("request ID not found in context")
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	
+
 	middleware := RequestIDMiddleware()
 	wrapped := middleware(handler)
-	
-	req := httptest.NewRequest("GET", "/test", nil)
+
+	req := httptest.NewRequest("GET", "/test", http.NoBody)
 	rec := httptest.NewRecorder()
-	
+
 	wrapped.ServeHTTP(rec, req)
-	
+
 	reqIDHeader := rec.Header().Get("X-Request-ID")
 	if reqIDHeader == "" {
 		t.Error("X-Request-ID header not set")

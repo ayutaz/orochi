@@ -14,13 +14,13 @@ func TestNewServer(t *testing.T) {
 		cfg := &config.Config{
 			Port: 8080,
 		}
-		
+
 		server := NewServer(cfg)
-		
+
 		if server == nil {
 			t.Fatal("server should not be nil")
 		}
-		
+
 		if server.config != cfg {
 			t.Error("server config should match provided config")
 		}
@@ -60,7 +60,7 @@ func TestServer_Routes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, tt.path, nil)
+			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
 			w := httptest.NewRecorder()
 
 			server.router.ServeHTTP(w, req)
@@ -77,7 +77,7 @@ func TestServer_HealthCheck(t *testing.T) {
 		cfg := &config.Config{Port: 8080}
 		server := NewServer(cfg)
 
-		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		req := httptest.NewRequest(http.MethodGet, "/health", http.NoBody)
 		w := httptest.NewRecorder()
 
 		server.router.ServeHTTP(w, req)

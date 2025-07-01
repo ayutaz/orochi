@@ -51,11 +51,11 @@ type bencodeTorrent struct {
 // ParseTorrentFile parses a torrent file and returns its information.
 func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 	var torrent bencodeTorrent
-	
+
 	if err := bencode.DecodeBytes(data, &torrent); err != nil {
 		return nil, errors.ParseError("failed to decode torrent file", err)
 	}
-	
+
 	// Validate required fields
 	if torrent.Info.Name == "" {
 		return nil, errors.InvalidInput("torrent missing required field: name")
@@ -66,17 +66,17 @@ func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 	if torrent.Info.Pieces == "" {
 		return nil, errors.InvalidInput("torrent missing required field: pieces")
 	}
-	
+
 	// Calculate info hash
 	infoBencode, err := bencode.EncodeBytes(torrent.Info)
 	if err != nil {
 		return nil, errors.InternalWithError("failed to encode info dict", err)
 	}
-	
+
 	h := sha1.New() //nolint:gosec // SHA1 is required by BitTorrent protocol
 	h.Write(infoBencode)
 	infoHash := hex.EncodeToString(h.Sum(nil))
-	
+
 	info := &TorrentInfo{
 		Name:        torrent.Info.Name,
 		InfoHash:    infoHash,
@@ -85,7 +85,7 @@ func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 		Announce:    torrent.Announce,
 		Trackers:    []string{torrent.Announce},
 	}
-	
+
 	// Handle multi-file torrents
 	if len(torrent.Info.Files) > 0 {
 		var totalLength int64
@@ -98,7 +98,7 @@ func ParseTorrentFile(data []byte) (*TorrentInfo, error) {
 		}
 		info.Length = totalLength
 	}
-	
+
 	return info, nil
 }
 
@@ -107,49 +107,49 @@ func ParseMagnetLink(magnetLink string) (*TorrentInfo, error) {
 	if !strings.HasPrefix(magnetLink, "magnet:?") {
 		return nil, errors.InvalidInput("invalid magnet link format")
 	}
-	
+
 	// Parse query parameters
 	u, err := url.Parse(magnetLink)
 	if err != nil {
 		return nil, errors.ParseError("failed to parse magnet link", err)
 	}
-	
+
 	params := u.Query()
-	
+
 	// Extract info hash (required)
 	xt := params.Get("xt")
 	if xt == "" {
 		return nil, errors.InvalidInput("magnet link missing required parameter: xt")
 	}
-	
+
 	// Parse xt parameter (e.g., "urn:btih:1234567890abcdef...")
 	if !strings.HasPrefix(xt, "urn:btih:") {
 		return nil, errors.InvalidInput("invalid xt parameter format")
 	}
-	
+
 	infoHash := strings.TrimPrefix(xt, "urn:btih:")
 	if len(infoHash) != 40 && len(infoHash) != 32 {
 		return nil, errors.InvalidInputf("invalid info hash length: %d", len(infoHash))
 	}
-	
+
 	// Convert base32 to hex if necessary
 	if len(infoHash) == 32 {
 		// TODO: Implement base32 to hex conversion
 		return nil, errors.InvalidInput("base32 info hash not yet supported")
 	}
-	
+
 	info := &TorrentInfo{
 		InfoHash: strings.ToLower(infoHash),
 		Name:     params.Get("dn"), // Display name (optional)
-		Trackers: params["tr"],      // Tracker URLs (optional)
+		Trackers: params["tr"],     // Tracker URLs (optional)
 	}
-	
+
 	// Parse optional parameters
 	if xl := params.Get("xl"); xl != "" {
 		if length, err := strconv.ParseInt(xl, 10, 64); err == nil {
 			info.Length = length
 		}
 	}
-	
+
 	return info, nil
 }

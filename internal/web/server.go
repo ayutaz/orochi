@@ -24,7 +24,7 @@ type Server struct {
 	logger         logger.Logger
 }
 
-// Router returns the server's router for testing
+// Router returns the server's router for testing.
 func (s *Server) Router() http.Handler {
 	return s.router
 }
@@ -35,7 +35,7 @@ func NewServer(cfg *config.Config) *Server {
 	log := logger.NewWithLevel(logger.InfoLevel).WithFields(
 		logger.String("component", "web-server"),
 	)
-	
+
 	s := &Server{
 		config: cfg,
 		router: NewRouter(),
@@ -74,13 +74,13 @@ func (s *Server) SetTorrentManager(tm torrent.Manager) {
 func (s *Server) setupRoutes() {
 	// Health check
 	s.router.GET("/health", s.wrapHandler(s.handleHealth))
-	
+
 	// Metrics endpoint
 	s.router.GET("/metrics", s.wrapHandler(s.handleMetrics))
-	
+
 	// API routes group
 	api := s.router.Group("/api", RequireTorrentManager(s))
-	
+
 	// Torrent endpoints
 	api.GET("/torrents", s.wrapHandler(s.handleListTorrents))
 	api.POST("/torrents", s.wrapHandler(s.handleAddTorrent))
@@ -89,13 +89,13 @@ func (s *Server) setupRoutes() {
 	api.DELETE("/torrents/:id", s.wrapHandler(s.handleDeleteTorrent))
 	api.POST("/torrents/:id/start", s.wrapHandler(s.handleStartTorrent))
 	api.POST("/torrents/:id/stop", s.wrapHandler(s.handleStopTorrent))
-	
+
 	// Web UI
 	s.router.GET("/", s.wrapHandler(s.handleHome))
 	s.router.GET("/*", s.wrapHandler(s.handleStatic))
 }
 
-// wrapHandler converts a standard handler to our HandlerFunc
+// wrapHandler converts a standard handler to our HandlerFunc.
 func (s *Server) wrapHandler(handler func(w http.ResponseWriter, r *http.Request)) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		handler(w, r)
@@ -129,21 +129,21 @@ func (s *Server) handleHome(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	indexHTML, err := fs.ReadFile(templatesFS, "index.html")
 	if err != nil {
 		s.logger.Error("failed to read index.html", logger.Err(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if _, err := w.Write(indexHTML); err != nil {
 		s.logger.Error("failed to write response", logger.Err(err))
 	}
 }
 
-// handleStatic handles static file requests
+// handleStatic handles static file requests.
 func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	staticFS, err := GetStaticFS()
 	if err != nil {
@@ -154,35 +154,35 @@ func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
 }
 
-// handleMetrics handles metrics endpoint
-func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
+// handleMetrics handles metrics endpoint.
+func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	// Update system metrics
 	m := metrics.Get()
-	
+
 	// Get memory stats
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 	if memStats.Alloc <= 9223372036854775807 { // max int64
 		m.SetMemoryUsage(int64(memStats.Alloc))
 	}
-	
+
 	// Get goroutine count
 	numGoroutines := runtime.NumGoroutine()
 	if numGoroutines <= 2147483647 { // max int32
 		m.SetGoroutineCount(int32(numGoroutines)) //nolint:gosec // bounds checked above
 	}
-	
+
 	// Get torrent metrics if manager is available
 	if s.torrentManager != nil {
 		torrents := s.torrentManager.ListTorrents()
 		m.TorrentsTotal = int64(len(torrents))
-		
+
 		// Reset status counters
 		m.TorrentsDownloading = 0
 		m.TorrentsSeeding = 0
 		m.TorrentsStopped = 0
 		m.TorrentsError = 0
-		
+
 		// Count by status
 		for _, t := range torrents {
 			switch t.Status {
@@ -197,7 +197,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	// Return metrics snapshot
 	snapshot := m.Snapshot()
 	w.Header().Set("Content-Type", "application/json")

@@ -95,8 +95,6 @@ func TestLogger_WithContext(t *testing.T) {
 	}
 
 	log := New(config)
-	type contextKey string
-	const requestIDKey contextKey = "request_id"
 	ctx := context.WithValue(context.Background(), requestIDKey, "test-123")
 	logWithCtx := log.WithContext(ctx)
 

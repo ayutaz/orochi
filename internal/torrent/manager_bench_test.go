@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	
+
 	"github.com/zeebo/bencode"
 )
 
-// BenchmarkManagerAdd benchmarks adding torrents
+// BenchmarkManagerAdd benchmarks adding torrents.
 func BenchmarkManagerAdd(b *testing.B) {
 	manager := NewManager()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Create unique torrent data for each iteration
@@ -20,10 +20,10 @@ func BenchmarkManagerAdd(b *testing.B) {
 	}
 }
 
-// BenchmarkManagerGet benchmarks getting torrents
+// BenchmarkManagerGet benchmarks getting torrents.
 func BenchmarkManagerGet(b *testing.B) {
 	manager := NewManager()
-	
+
 	// Pre-populate with torrents
 	var ids []string
 	for i := 0; i < 1000; i++ {
@@ -34,33 +34,33 @@ func BenchmarkManagerGet(b *testing.B) {
 		}
 		ids = append(ids, id)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		manager.GetTorrent(ids[i%len(ids)])
 	}
 }
 
-// BenchmarkManagerList benchmarks listing torrents
+// BenchmarkManagerList benchmarks listing torrents.
 func BenchmarkManagerList(b *testing.B) {
 	manager := NewManager()
-	
+
 	// Pre-populate with torrents
 	for i := 0; i < 100; i++ {
 		data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
 		_, _ = manager.AddTorrent(data)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		manager.ListTorrents()
 	}
 }
 
-// BenchmarkManagerConcurrentOperations benchmarks concurrent access
+// BenchmarkManagerConcurrentOperations benchmarks concurrent access.
 func BenchmarkManagerConcurrentOperations(b *testing.B) {
 	manager := NewManager()
-	
+
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
 		for pb.Next() {
@@ -84,16 +84,16 @@ func BenchmarkManagerConcurrentOperations(b *testing.B) {
 	})
 }
 
-// BenchmarkManagerWithRWMutex benchmarks the current RWMutex implementation
+// BenchmarkManagerWithRWMutex benchmarks the current RWMutex implementation.
 func BenchmarkManagerWithRWMutex(b *testing.B) {
 	manager := NewManager()
-	
+
 	// Pre-populate
 	for i := 0; i < 100; i++ {
 		data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
 		_, _ = manager.AddTorrent(data)
 	}
-	
+
 	b.Run("90%Read-10%Write", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			i := 0
@@ -110,7 +110,7 @@ func BenchmarkManagerWithRWMutex(b *testing.B) {
 			}
 		})
 	})
-	
+
 	b.Run("50%Read-50%Write", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			i := 0
@@ -129,7 +129,7 @@ func BenchmarkManagerWithRWMutex(b *testing.B) {
 	})
 }
 
-// Helper function to create test torrent with specific name
+// Helper function to create test torrent with specific name.
 func createTestTorrentWithName(name string) []byte {
 	torrent := map[string]interface{}{
 		"announce": "http://tracker.example.com:8080/announce",
@@ -140,7 +140,7 @@ func createTestTorrentWithName(name string) []byte {
 			"pieces":       string(make([]byte, 20)), // Single piece
 		},
 	}
-	
+
 	data, err := bencode.EncodeBytes(torrent)
 	if err != nil {
 		return nil
@@ -148,7 +148,7 @@ func createTestTorrentWithName(name string) []byte {
 	return data
 }
 
-// BenchmarkConcurrentAccess tests concurrent performance
+// BenchmarkConcurrentAccess tests concurrent performance.
 func BenchmarkConcurrentAccess(b *testing.B) {
 	benchmarks := []struct {
 		name    string
@@ -160,22 +160,22 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 		{"10Readers-5Writers", 10, 5},
 		{"100Readers-10Writers", 100, 10},
 	}
-	
+
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			manager := NewManager()
-			
+
 			// Pre-populate
 			for i := 0; i < 100; i++ {
 				data := createTestTorrentWithName(fmt.Sprintf("test%d.txt", i))
 				_, _ = manager.AddTorrent(data)
 			}
-			
+
 			b.ResetTimer()
-			
+
 			var wg sync.WaitGroup
 			stop := make(chan struct{})
-			
+
 			// Start readers
 			for i := 0; i < bm.readers; i++ {
 				wg.Add(1)
@@ -192,7 +192,7 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 					}
 				}()
 			}
-			
+
 			// Start writers
 			for i := 0; i < bm.writers; i++ {
 				wg.Add(1)
@@ -211,7 +211,7 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 					}
 				}(i)
 			}
-			
+
 			// Run for the duration of the benchmark
 			b.StopTimer()
 			close(stop)

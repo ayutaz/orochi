@@ -13,11 +13,11 @@ func CreateTestTorrent() []byte {
 			Pieces:      "01234567890123456789",
 		},
 	}
-	
+
 	data, err := bencode.EncodeBytes(torrent)
 	if err != nil {
 		panic(err) // This should never happen in tests
 	}
-	
+
 	return data
 }

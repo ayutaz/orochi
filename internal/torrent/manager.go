@@ -3,7 +3,7 @@ package torrent
 import (
 	"sync"
 	"time"
-	
+
 	"github.com/ayutaz/orochi/internal/errors"
 )
 
@@ -23,14 +23,14 @@ const (
 
 // Torrent represents a managed torrent.
 type Torrent struct {
-	ID         string         `json:"id"`
-	Info       *TorrentInfo   `json:"info"`
-	Status     Status  `json:"status"`
-	Progress   float64        `json:"progress"`
-	Downloaded int64          `json:"downloaded"`
-	Uploaded   int64          `json:"uploaded"`
-	AddedAt    time.Time      `json:"added_at"`
-	Error      string         `json:"error,omitempty"`
+	ID         string       `json:"id"`
+	Info       *TorrentInfo `json:"info"`
+	Status     Status       `json:"status"`
+	Progress   float64      `json:"progress"`
+	Downloaded int64        `json:"downloaded"`
+	Uploaded   int64        `json:"uploaded"`
+	AddedAt    time.Time    `json:"added_at"`
+	Error      string       `json:"error,omitempty"`
 }
 
 // manager implements the Manager interface.
@@ -52,15 +52,15 @@ func (m *manager) AddTorrent(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	// Check if torrent already exists
 	if existing, exists := m.torrents[info.InfoHash]; exists {
 		return existing.ID, nil
 	}
-	
+
 	// Create new torrent
 	torrent := &Torrent{
 		ID:       info.InfoHash,
@@ -69,9 +69,9 @@ func (m *manager) AddTorrent(data []byte) (string, error) {
 		Progress: 0,
 		AddedAt:  time.Now(),
 	}
-	
+
 	m.torrents[info.InfoHash] = torrent
-	
+
 	return info.InfoHash, nil
 }
 
@@ -81,15 +81,15 @@ func (m *manager) AddMagnet(magnetLink string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	// Check if torrent already exists
 	if existing, exists := m.torrents[info.InfoHash]; exists {
 		return existing.ID, nil
 	}
-	
+
 	// Create new torrent
 	torrent := &Torrent{
 		ID:       info.InfoHash,
@@ -98,9 +98,9 @@ func (m *manager) AddMagnet(magnetLink string) (string, error) {
 		Progress: 0,
 		AddedAt:  time.Now(),
 	}
-	
+
 	m.torrents[info.InfoHash] = torrent
-	
+
 	return info.InfoHash, nil
 }
 
@@ -108,15 +108,15 @@ func (m *manager) AddMagnet(magnetLink string) (string, error) {
 func (m *manager) RemoveTorrent(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if _, exists := m.torrents[id]; !exists {
 		return errors.NotFoundf("torrent with id %s not found", id)
 	}
-	
+
 	// TODO: Stop torrent if running
-	
+
 	delete(m.torrents, id)
-	
+
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (m *manager) RemoveTorrent(id string) error {
 func (m *manager) GetTorrent(id string) (*Torrent, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	torrent, exists := m.torrents[id]
 	return torrent, exists
 }
@@ -133,12 +133,12 @@ func (m *manager) GetTorrent(id string) (*Torrent, bool) {
 func (m *manager) ListTorrents() []*Torrent {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	torrents := make([]*Torrent, 0, len(m.torrents))
 	for _, torrent := range m.torrents {
 		torrents = append(torrents, torrent)
 	}
-	
+
 	return torrents
 }
 
@@ -146,7 +146,7 @@ func (m *manager) ListTorrents() []*Torrent {
 func (m *manager) Count() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	return len(m.torrents)
 }
 
@@ -154,15 +154,15 @@ func (m *manager) Count() int {
 func (m *manager) StartTorrent(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	torrent, exists := m.torrents[id]
 	if !exists {
 		return errors.NotFoundf("torrent with id %s not found", id)
 	}
-	
+
 	// TODO: Actually start the torrent download
 	torrent.Status = StatusDownloading
-	
+
 	return nil
 }
 
@@ -170,15 +170,15 @@ func (m *manager) StartTorrent(id string) error {
 func (m *manager) StopTorrent(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	torrent, exists := m.torrents[id]
 	if !exists {
 		return errors.NotFoundf("torrent with id %s not found", id)
 	}
-	
+
 	// TODO: Actually stop the torrent
 	torrent.Status = StatusStopped
-	
+
 	return nil
 }
 
@@ -186,7 +186,7 @@ func (m *manager) StopTorrent(id string) error {
 func (t *Torrent) UpdateProgress(downloaded, uploaded int64) {
 	t.Downloaded = downloaded
 	t.Uploaded = uploaded
-	
+
 	if t.Info.Length > 0 {
 		t.Progress = float64(downloaded) / float64(t.Info.Length) * 100
 	}

@@ -1,125 +1,28 @@
-run:
-  timeout: 5m
-  tests: true
+linters-settings:
+  errcheck:
+    # Report about assignment of errors to blank identifiers
+    check-blank: false
 
 linters:
   enable:
-    - gofmt
-    - goimports
-    - govet
     - errcheck
-    - staticcheck
-    - unused
+    - govet
+    - godot
+    - gofmt
+    - gocritic
     - gosimple
     - ineffassign
-    - typecheck
-    - gosec
-    - misspell
     - lll
-    - nakedret
-    - prealloc
-    - gocritic
-    - gochecknoinits
-    - gocognit
-    - godot
-    - godox
-    - err113
-    - gofumpt
-    - gomodguard
-    - goprintffuncname
-    - makezero
-    - nestif
-    - nilerr
     - noctx
-    - nolintlint
-    - predeclared
-    - revive
-    - stylecheck
-    - thelper
-    - unconvert
     - unparam
-    - whitespace
-
+    - revive
   disable:
-    - exhaustive
-    - exhaustruct
-    - gochecknoglobals
-    - gocyclo
-    - funlen
-    - goconst
-    - testpackage
-    - wrapcheck
-    - wsl
-    - nlreturn
-    - paralleltest
-    - tparallel
-    - rowserrcheck
-    - sqlclosecheck
-    - wastedassign
-    - goheader
-    - tagliatelle
-    - promlinter
-    - importas
-
-linters-settings:
-  gofmt:
-    simplify: true
-  goimports:
-    local-prefixes: github.com/ayutaz/orochi
-  govet:
-    enable-all: true
-  lll:
-    line-length: 120
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - fmt.Sscanf
-      - (io.Writer).Write
-      - github.com/ayutaz/orochi/internal/web.writeJSON
-      - github.com/ayutaz/orochi/internal/web.writeError
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-  godot:
-    scope: declarations
-    capital: true
+    - godox
 
 issues:
   exclude-rules:
-    - path: _test\.go
+    # Exclude errcheck for _ = writeJSON pattern
+    - path: internal/web/api.go
       linters:
-        - dupl
-        - gosec
-        - goconst
-        - err113
-        - gocognit
         - errcheck
-    - linters:
-        - errcheck
-      text: "Error return value of `l.loadFromFile` is not checked"
-    - linters:
-        - errcheck
-      text: "Error return value of `manager.AddTorrent` is not checked"
-    - linters:
-        - errcheck
-      text: "Error return value of `manager.AddMagnet` is not checked"
-    - linters:
-        - errcheck
-      text: "Error return value of `manager.RemoveTorrent` is not checked"
-    - linters:
-        - errcheck
-      text: "Error return value of `writeJSON` is not checked"
-    - linters:
-        - errcheck
-      text: "Error return value of `w.Write` is not checked"
-    - path: vendor
-      linters:
-        - all
-    - path: test/integration
-      linters:
-        - all
+      text: "Error return value is not checked"

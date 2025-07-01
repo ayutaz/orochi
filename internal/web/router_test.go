@@ -71,17 +71,17 @@ func TestRouter_MatchPattern(t *testing.T) {
 			params:      Params{},
 		},
 	}
-	
+
 	router := NewRouter()
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params, matched := router.matchPattern(tt.pattern, tt.path)
-			
+
 			if matched != tt.shouldMatch {
 				t.Errorf("expected match=%v, got %v", tt.shouldMatch, matched)
 			}
-			
+
 			if tt.shouldMatch && tt.params != nil {
 				for key, expectedValue := range tt.params {
 					if value, ok := params[key]; !ok || value != expectedValue {
@@ -95,38 +95,38 @@ func TestRouter_MatchPattern(t *testing.T) {
 
 func TestRouter_Routing(t *testing.T) {
 	router := NewRouter()
-	
+
 	// Test data
 	var calledRoute string
-	
+
 	// Register routes
 	router.GET("/", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "home"
 		return nil
 	})
-	
-	router.GET("/api/torrents", func(w http.ResponseWriter, r *http.Request) error {
+
+	router.GET("/api/torrents", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "list"
 		return nil
 	})
-	
-	router.POST("/api/torrents", func(w http.ResponseWriter, r *http.Request) error {
+
+	router.POST("/api/torrents", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "create"
 		return nil
 	})
-	
-	router.GET("/api/torrents/:id", func(w http.ResponseWriter, r *http.Request) error {
+
+	router.GET("/api/torrents/:id", func(_ http.ResponseWriter, r *http.Request) error {
 		params := GetParams(r)
 		calledRoute = "get:" + params["id"]
 		return nil
 	})
-	
-	router.DELETE("/api/torrents/:id", func(w http.ResponseWriter, r *http.Request) error {
+
+	router.DELETE("/api/torrents/:id", func(_ http.ResponseWriter, r *http.Request) error {
 		params := GetParams(r)
 		calledRoute = "delete:" + params["id"]
 		return nil
 	})
-	
+
 	tests := []struct {
 		method       string
 		path         string
@@ -141,20 +141,20 @@ func TestRouter_Routing(t *testing.T) {
 		{"GET", "/not/found", "", http.StatusNotFound},
 		{"PUT", "/api/torrents", "", http.StatusNotFound},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
 			calledRoute = ""
-			
-			req := httptest.NewRequest(tt.method, tt.path, nil)
+
+			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
 			rec := httptest.NewRecorder()
-			
+
 			router.ServeHTTP(rec, req)
-			
+
 			if calledRoute != tt.expectedCall {
 				t.Errorf("expected route %s, got %s", tt.expectedCall, calledRoute)
 			}
-			
+
 			if rec.Code != tt.expectedCode {
 				t.Errorf("expected status %d, got %d", tt.expectedCode, rec.Code)
 			}
@@ -164,10 +164,10 @@ func TestRouter_Routing(t *testing.T) {
 
 func TestRouter_Middleware(t *testing.T) {
 	router := NewRouter()
-	
+
 	// Track middleware execution order
 	var executionOrder []string
-	
+
 	// Global middleware
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -175,16 +175,16 @@ func TestRouter_Middleware(t *testing.T) {
 			next.ServeHTTP(w, r)
 		})
 	})
-	
+
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			executionOrder = append(executionOrder, "global2")
 			next.ServeHTTP(w, r)
 		})
 	})
-	
+
 	// Route with middleware
-	router.GET("/test", func(w http.ResponseWriter, r *http.Request) error {
+	router.GET("/test", func(_ http.ResponseWriter, _ *http.Request) error {
 		executionOrder = append(executionOrder, "handler")
 		return nil
 	}, func(next http.Handler) http.Handler {
@@ -193,19 +193,19 @@ func TestRouter_Middleware(t *testing.T) {
 			next.ServeHTTP(w, r)
 		})
 	})
-	
+
 	// Execute request
 	executionOrder = []string{}
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", http.NoBody)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	
+
 	// Check execution order
 	expectedOrder := []string{"global1", "global2", "route", "handler"}
 	if len(executionOrder) != len(expectedOrder) {
 		t.Fatalf("expected %d calls, got %d", len(expectedOrder), len(executionOrder))
 	}
-	
+
 	for i, expected := range expectedOrder {
 		if executionOrder[i] != expected {
 			t.Errorf("execution order[%d]: expected %s, got %s", i, expected, executionOrder[i])
@@ -215,20 +215,20 @@ func TestRouter_Middleware(t *testing.T) {
 
 func TestRouter_Group(t *testing.T) {
 	router := NewRouter()
-	
+
 	var calledRoute string
-	
+
 	// Create API group
 	api := router.Group("/api")
-	api.GET("/torrents", func(w http.ResponseWriter, r *http.Request) error {
+	api.GET("/torrents", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "api-torrents"
 		return nil
 	})
-	api.GET("/status", func(w http.ResponseWriter, r *http.Request) error {
+	api.GET("/status", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "api-status"
 		return nil
 	})
-	
+
 	// Create admin group with middleware
 	var adminCheck bool
 	admin := router.Group("/admin", func(next http.Handler) http.Handler {
@@ -237,35 +237,35 @@ func TestRouter_Group(t *testing.T) {
 			next.ServeHTTP(w, r)
 		})
 	})
-	admin.GET("/users", func(w http.ResponseWriter, r *http.Request) error {
+	admin.GET("/users", func(_ http.ResponseWriter, _ *http.Request) error {
 		calledRoute = "admin-users"
 		return nil
 	})
-	
+
 	tests := []struct {
-		path          string
-		expectedCall  string
-		expectAdmin   bool
+		path         string
+		expectedCall string
+		expectAdmin  bool
 	}{
 		{"/api/torrents", "api-torrents", false},
 		{"/api/status", "api-status", false},
 		{"/admin/users", "admin-users", true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			calledRoute = ""
 			adminCheck = false
-			
-			req := httptest.NewRequest("GET", tt.path, nil)
+
+			req := httptest.NewRequest("GET", tt.path, http.NoBody)
 			rec := httptest.NewRecorder()
-			
+
 			router.ServeHTTP(rec, req)
-			
+
 			if calledRoute != tt.expectedCall {
 				t.Errorf("expected route %s, got %s", tt.expectedCall, calledRoute)
 			}
-			
+
 			if adminCheck != tt.expectAdmin {
 				t.Errorf("expected admin check %v, got %v", tt.expectAdmin, adminCheck)
 			}

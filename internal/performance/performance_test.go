@@ -2,6 +2,7 @@ package performance
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
@@ -29,7 +30,8 @@ func BenchmarkServer(b *testing.B) {
 
 	b.Run("HealthCheck", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			resp, err := http.Get(ts.URL + "/health")
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/health", http.NoBody)
+			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -39,7 +41,8 @@ func BenchmarkServer(b *testing.B) {
 
 	b.Run("ListTorrents", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			resp, err := http.Get(ts.URL + "/api/torrents")
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/api/torrents", http.NoBody)
+			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -56,7 +59,10 @@ func BenchmarkServer(b *testing.B) {
 				b.Fatal(err)
 			}
 
-			resp, err := http.Post(ts.URL+"/api/torrents/magnet", "application/json", bytes.NewReader(data))
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+				ts.URL+"/api/torrents/magnet", bytes.NewReader(data))
+			req.Header.Set("Content-Type", "application/json")
+			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -71,14 +77,16 @@ func BenchmarkServer(b *testing.B) {
 				var resp *http.Response
 				var err error
 
+				var req *http.Request
 				switch i % 3 {
 				case 0:
-					resp, err = http.Get(ts.URL + "/health")
+					req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/health", http.NoBody)
 				case 1:
-					resp, err = http.Get(ts.URL + "/api/torrents")
+					req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/api/torrents", http.NoBody)
 				case 2:
-					resp, err = http.Get(ts.URL + "/metrics")
+					req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/metrics", http.NoBody)
 				}
+				resp, err = http.DefaultClient.Do(req)
 
 				if err != nil {
 					b.Fatal(err)
@@ -198,50 +206,62 @@ func TestLoadPerformance(t *testing.T) {
 				switch req % 5 {
 				case 0:
 					// Health check
-					resp, err := http.Get(ts.URL + "/health")
-					if err == nil {
+					req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/health", http.NoBody)
+					resp, healthErr := http.DefaultClient.Do(req)
+					if healthErr == nil {
 						resp.Body.Close()
 					}
+					err = healthErr
 
 				case 1:
 					// List torrents
-					resp, err := http.Get(ts.URL + "/api/torrents")
-					if err == nil {
+					req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/api/torrents", http.NoBody)
+					resp, listErr := http.DefaultClient.Do(req)
+					if listErr == nil {
 						resp.Body.Close()
 					}
+					err = listErr
 
 				case 2:
 					// Add magnet
 					magnet := fmt.Sprintf("magnet:?xt=urn:btih:%040d&dn=load%d-%d.txt", clientID*1000+req, clientID, req)
 					reqBody := map[string]string{"magnet": magnet}
-					data, err := json.Marshal(reqBody)
-					if err != nil {
+					data, marshalErr := json.Marshal(reqBody)
+					if marshalErr != nil {
 						select {
-						case errors <- err:
+						case errors <- marshalErr:
 						default:
 						}
 						return
 					}
 
-					resp, err := http.Post(ts.URL+"/api/torrents/magnet", "application/json", bytes.NewReader(data))
-					if err == nil {
+					req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+						ts.URL+"/api/torrents/magnet", bytes.NewReader(data))
+					req.Header.Set("Content-Type", "application/json")
+					resp, postErr := http.DefaultClient.Do(req)
+					if postErr == nil {
 						resp.Body.Close()
 					}
+					err = postErr
 
 				case 3:
 					// Get torrent (might 404)
 					id := fmt.Sprintf("%040d", req%50)
-					resp, err := http.Get(ts.URL + "/api/torrents/" + id)
-					if err == nil {
+					req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/api/torrents/"+id, http.NoBody)
+					resp, getErr := http.DefaultClient.Do(req)
+					if getErr == nil {
 						resp.Body.Close()
 					}
+					err = getErr
 
 				case 4:
 					// Metrics
-					resp, err := http.Get(ts.URL + "/metrics")
-					if err == nil {
+					req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/metrics", http.NoBody)
+					resp, metricsErr := http.DefaultClient.Do(req)
+					if metricsErr == nil {
 						resp.Body.Close()
 					}
+					err = metricsErr
 				}
 
 				if err != nil {
@@ -287,7 +307,7 @@ func TestLoadPerformance(t *testing.T) {
 	}
 }
 
-// TestMemoryUsage tests for memory leaks
+// TestMemoryUsage tests for memory leaks.
 func TestMemoryUsage(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping memory test in short mode")
@@ -317,7 +337,7 @@ func TestMemoryUsage(t *testing.T) {
 	}
 }
 
-// BenchmarkFileUpload tests file upload performance
+// BenchmarkFileUpload tests file upload performance.
 func BenchmarkFileUpload(b *testing.B) {
 	// Create server
 	cfg := config.LoadDefault()
@@ -342,16 +362,18 @@ func BenchmarkFileUpload(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		if _, err := part.Write(torrentData); err != nil {
-			b.Fatal(err)
+		if _, writeErr := part.Write(torrentData); writeErr != nil {
+			b.Fatal(writeErr)
 		}
 
-		if err := writer.Close(); err != nil {
-			b.Fatal(err)
+		if closeErr := writer.Close(); closeErr != nil {
+			b.Fatal(closeErr)
 		}
 
 		// Send request
-		resp, err := http.Post(ts.URL+"/api/torrents", writer.FormDataContentType(), &buf)
+		req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, ts.URL+"/api/torrents", &buf)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			b.Fatal(err)
 		}

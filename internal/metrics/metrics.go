@@ -47,7 +47,7 @@ var (
 	once          sync.Once
 )
 
-// Get returns the global metrics instance
+// Get returns the global metrics instance.
 func Get() *Metrics {
 	once.Do(func() {
 		globalMetrics = &Metrics{
@@ -60,17 +60,17 @@ func Get() *Metrics {
 	return globalMetrics
 }
 
-// IncrementTorrents increments the total torrent count
+// IncrementTorrents increments the total torrent count.
 func (m *Metrics) IncrementTorrents() {
 	atomic.AddInt64(&m.TorrentsTotal, 1)
 }
 
-// DecrementTorrents decrements the total torrent count
+// DecrementTorrents decrements the total torrent count.
 func (m *Metrics) DecrementTorrents() {
 	atomic.AddInt64(&m.TorrentsTotal, -1)
 }
 
-// SetTorrentStatus updates torrent status counters
+// SetTorrentStatus updates torrent status counters.
 func (m *Metrics) SetTorrentStatus(oldStatus, newStatus string) {
 	// Decrement old status
 	switch oldStatus {
@@ -97,42 +97,42 @@ func (m *Metrics) SetTorrentStatus(oldStatus, newStatus string) {
 	}
 }
 
-// AddBytesDownloaded adds to the downloaded bytes counter
+// AddBytesDownloaded adds to the downloaded bytes counter.
 func (m *Metrics) AddBytesDownloaded(bytes int64) {
 	atomic.AddInt64(&m.BytesDownloaded, bytes)
 }
 
-// AddBytesUploaded adds to the uploaded bytes counter
+// AddBytesUploaded adds to the uploaded bytes counter.
 func (m *Metrics) AddBytesUploaded(bytes int64) {
 	atomic.AddInt64(&m.BytesUploaded, bytes)
 }
 
-// IncrementHTTPRequests increments the HTTP request counter
+// IncrementHTTPRequests increments the HTTP request counter.
 func (m *Metrics) IncrementHTTPRequests() {
 	atomic.AddInt64(&m.HTTPRequests, 1)
 }
 
-// IncrementHTTPErrors increments the HTTP error counter
+// IncrementHTTPErrors increments the HTTP error counter.
 func (m *Metrics) IncrementHTTPErrors() {
 	atomic.AddInt64(&m.HTTPErrors, 1)
 }
 
-// RecordHTTPDuration records an HTTP request duration
+// RecordHTTPDuration records an HTTP request duration.
 func (m *Metrics) RecordHTTPDuration(duration time.Duration) {
 	m.HTTPRequestDuration.Record(duration)
 }
 
-// SetMemoryUsage updates the memory usage metric
+// SetMemoryUsage updates the memory usage metric.
 func (m *Metrics) SetMemoryUsage(bytes int64) {
 	atomic.StoreInt64(&m.MemoryUsage, bytes)
 }
 
-// SetGoroutineCount updates the goroutine count
+// SetGoroutineCount updates the goroutine count.
 func (m *Metrics) SetGoroutineCount(count int32) {
 	atomic.StoreInt32(&m.GoroutineCount, count)
 }
 
-// Record records a duration measurement
+// Record records a duration measurement.
 func (d *DurationMetric) Record(duration time.Duration) {
 	nanos := duration.Nanoseconds()
 
@@ -150,7 +150,7 @@ func (d *DurationMetric) Record(duration time.Duration) {
 	}
 }
 
-// Stats returns duration statistics
+// Stats returns duration statistics.
 func (d *DurationMetric) Stats() (count int64, avg, minDur, maxDur time.Duration) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
@@ -164,7 +164,7 @@ func (d *DurationMetric) Stats() (count int64, avg, minDur, maxDur time.Duration
 	return
 }
 
-// Snapshot returns a snapshot of all metrics
+// Snapshot returns a snapshot of all metrics.
 func (m *Metrics) Snapshot() map[string]interface{} {
 	httpCount, httpAvg, httpMin, httpMax := m.HTTPRequestDuration.Stats()
 
