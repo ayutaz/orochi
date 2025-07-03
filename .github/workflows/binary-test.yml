@@ -77,19 +77,21 @@ jobs:
       timeout-minutes: 1
     
     # Start server and test connectivity
-    - name: Start server in background
+    - name: Start server in background (Unix)
+      if: matrix.os != 'windows-latest'
       shell: bash
       run: |
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          # Windows: Start in background with proper output redirection
-          Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -PassThru | Out-Null
-        else
-          # Unix: Start in background
-          ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --port 9999 > server.log 2>&1 &
-        fi
+        ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --port 9999 > server.log 2>&1 &
         echo "SERVER_PID=$!" >> $GITHUB_ENV
-        # Give server time to start
         sleep 5
+      timeout-minutes: 2
+    
+    - name: Start server in background (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -NoNewWindow
+        Start-Sleep -Seconds 5
       timeout-minutes: 2
     
     - name: Check server is running
@@ -103,20 +105,20 @@ jobs:
         fi
       timeout-minutes: 1
     
-    - name: Stop server
-      if: always()
+    - name: Stop server (Unix)
+      if: always() && matrix.os != 'windows-latest'
       shell: bash
       run: |
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          # Windows: Kill process
-          powershell -Command "Get-Process -Name '${{ matrix.binary_name }}' -ErrorAction SilentlyContinue | Stop-Process -Force"
-        else
-          # Unix: Kill process
-          if [ ! -z "${SERVER_PID}" ]; then
-            kill $SERVER_PID || true
-          fi
-          pkill -f "${{ matrix.binary_name }}" || true
+        if [ ! -z "${SERVER_PID}" ]; then
+          kill $SERVER_PID || true
         fi
+        pkill -f "${{ matrix.binary_name }}" || true
+    
+    - name: Stop server (Windows)
+      if: always() && matrix.os == 'windows-latest'  
+      shell: pwsh
+      run: |
+        Get-Process -Name "${{ matrix.binary_name }}" -ErrorAction SilentlyContinue | Stop-Process -Force
     
     - name: Display server logs on failure
       if: failure()
