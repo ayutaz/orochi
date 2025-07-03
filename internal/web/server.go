@@ -98,8 +98,9 @@ func (s *Server) BroadcastTorrentData() {
 
 // setupRoutes configures all HTTP routes.
 func (s *Server) setupRoutes() {
-	// Health check
+	// Health check (both paths for compatibility)
 	s.router.GET("/health", s.wrapHandler(s.handleHealth))
+	s.router.GET("/api/health", s.wrapHandler(s.handleHealth))
 
 	// Metrics endpoint
 	s.router.GET("/metrics", s.wrapHandler(s.handleMetrics))
