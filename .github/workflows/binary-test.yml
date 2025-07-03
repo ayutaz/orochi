@@ -91,18 +91,32 @@ jobs:
       shell: pwsh
       run: |
         Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -NoNewWindow
-        Start-Sleep -Seconds 5
+        # Windows needs more time to start
+        Start-Sleep -Seconds 10
       timeout-minutes: 2
     
-    - name: Check server is running
+    - name: Check server is running (Unix)
+      if: matrix.os != 'windows-latest'
       shell: bash
       run: |
-        if command -v curl &> /dev/null; then
-          curl -f http://localhost:9999/api/health || (echo "Server health check failed" && cat server.log && exit 1)
-        else
-          # Windows fallback
-          powershell -Command "Invoke-WebRequest -Uri http://localhost:9999/api/health -UseBasicParsing" || (echo "Server health check failed" && type server.log && exit 1)
-        fi
+        curl -f http://localhost:9999/api/health || (echo "Server health check failed" && cat server.log && exit 1)
+      timeout-minutes: 1
+    
+    - name: Check server is running (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        try {
+          $response = Invoke-WebRequest -Uri "http://localhost:9999/api/health" -UseBasicParsing -TimeoutSec 10
+          if ($response.StatusCode -ne 200) {
+            throw "Health check failed with status: $($response.StatusCode)"
+          }
+          Write-Host "Health check passed"
+        } catch {
+          Write-Host "Server health check failed: $_"
+          Get-Content server.log -ErrorAction SilentlyContinue
+          exit 1
+        }
       timeout-minutes: 1
     
     - name: Stop server (Unix)
