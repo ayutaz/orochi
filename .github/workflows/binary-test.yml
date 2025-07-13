@@ -149,7 +149,9 @@ jobs:
           # Create process with explicit working directory and environment
           $pinfo = New-Object System.Diagnostics.ProcessStartInfo
           $pinfo.FileName = (Get-Item "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}").FullName
+          # Add --no-console flag to prevent Windows console allocation issues
           $pinfo.Arguments = "--port 9999"
+          $pinfo.EnvironmentVariables["OROCHI_NO_CONSOLE"] = "1"
           $pinfo.UseShellExecute = $false
           $pinfo.RedirectStandardOutput = $true
           $pinfo.RedirectStandardError = $true

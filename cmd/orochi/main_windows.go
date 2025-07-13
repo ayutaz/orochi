@@ -8,6 +8,11 @@ import (
 )
 
 func init() {
+	// Skip console allocation if OROCHI_NO_CONSOLE is set (for CI/testing)
+	if os.Getenv("OROCHI_NO_CONSOLE") == "1" {
+		return
+	}
+	
 	// On Windows, allocate a console if running from a non-console context
 	// This prevents the app from immediately closing when double-clicked
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
