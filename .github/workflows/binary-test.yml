@@ -76,6 +76,49 @@ jobs:
         ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --help || true
       timeout-minutes: 1
     
+    # Windows-specific binary validation
+    - name: Validate Windows binary
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Write-Host "=== Validating Windows Binary ===""
+        
+        # Check if binary has correct Windows subsystem
+        try {
+          # Simple check to ensure it's a Windows GUI or Console app
+          $output = & ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --version 2>&1
+          Write-Host "Version output: $output"
+        } catch {
+          Write-Host "Error during version check: $_"
+          # This is expected for GUI apps, not an error
+        }
+        
+        # Test with explicit console allocation
+        Write-Host "`nTesting with explicit console..."
+        try {
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = (Get-Item "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}").FullName
+          $pinfo.Arguments = "--version"
+          $pinfo.UseShellExecute = $false
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.RedirectStandardError = $true
+          $pinfo.CreateNoWindow = $false
+          
+          $p = New-Object System.Diagnostics.Process
+          $p.StartInfo = $pinfo
+          $p.Start() | Out-Null
+          $p.WaitForExit()
+          
+          $stdout = $p.StandardOutput.ReadToEnd()
+          $stderr = $p.StandardError.ReadToEnd()
+          
+          Write-Host "Exit code: $($p.ExitCode)"
+          Write-Host "Stdout: $stdout"
+          Write-Host "Stderr: $stderr"
+        } catch {
+          Write-Host "Process start error: $_"
+        }
+    
     # Start server and test connectivity
     - name: Start server in background (Unix)
       if: matrix.os != 'windows-latest'
@@ -90,9 +133,51 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -NoNewWindow
-        # Windows needs more time to start
-        Start-Sleep -Seconds 10
+        # Debug: Check if binary exists and is executable
+        Write-Host "Checking binary: ./${{ matrix.binary_name }}${{ matrix.binary_suffix }}"
+        if (Test-Path "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}") {
+          Write-Host "Binary found at: $(Get-Location)/${{ matrix.binary_name }}${{ matrix.binary_suffix }}"
+          $fileInfo = Get-Item "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}"
+          Write-Host "File size: $($fileInfo.Length) bytes"
+        } else {
+          Write-Host "ERROR: Binary not found!"
+          exit 1
+        }
+        
+        # Start the process with more detailed error handling
+        try {
+          $process = Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -NoNewWindow -PassThru
+          Write-Host "Process started with ID: $($process.Id)"
+          
+          # Check if process is still running after a short delay
+          Start-Sleep -Seconds 2
+          if ($process.HasExited) {
+            Write-Host "ERROR: Process exited immediately with code: $($process.ExitCode)"
+            Write-Host "=== Server Output ==="
+            Get-Content server.log -ErrorAction SilentlyContinue
+            Write-Host "=== Server Errors ==="
+            Get-Content server_error.log -ErrorAction SilentlyContinue
+            exit 1
+          }
+          
+          # Windows needs more time to start
+          Start-Sleep -Seconds 10
+          
+          # Final check if process is still running
+          if ($process.HasExited) {
+            Write-Host "ERROR: Process exited during startup with code: $($process.ExitCode)"
+            Write-Host "=== Server Output ==="
+            Get-Content server.log -ErrorAction SilentlyContinue
+            Write-Host "=== Server Errors ==="
+            Get-Content server_error.log -ErrorAction SilentlyContinue
+            exit 1
+          }
+          
+          Write-Host "Server appears to be running"
+        } catch {
+          Write-Host "ERROR starting process: $_"
+          exit 1
+        }
       timeout-minutes: 2
     
     - name: Check server is running (Unix)
@@ -106,15 +191,46 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
+        Write-Host "Checking server health at http://localhost:9999/api/health"
+        
+        # First check if port is listening
+        try {
+          $tcpConnection = Test-NetConnection -ComputerName localhost -Port 9999 -WarningAction SilentlyContinue
+          if (-not $tcpConnection.TcpTestSucceeded) {
+            Write-Host "ERROR: Port 9999 is not listening"
+            Write-Host "=== Server Output ==="
+            Get-Content server.log -ErrorAction SilentlyContinue
+            Write-Host "=== Server Errors ==="
+            Get-Content server_error.log -ErrorAction SilentlyContinue
+            
+            # Check if process is still running
+            $orochi = Get-Process -Name ${{ matrix.binary_name }} -ErrorAction SilentlyContinue
+            if ($orochi) {
+              Write-Host "Process is running with PID: $($orochi.Id)"
+            } else {
+              Write-Host "Process is NOT running"
+            }
+            exit 1
+          }
+          Write-Host "Port 9999 is listening"
+        } catch {
+          Write-Host "Error checking port: $_"
+        }
+        
+        # Now try the health check
         try {
           $response = Invoke-WebRequest -Uri "http://localhost:9999/api/health" -UseBasicParsing -TimeoutSec 10
           if ($response.StatusCode -ne 200) {
             throw "Health check failed with status: $($response.StatusCode)"
           }
-          Write-Host "Health check passed"
+          Write-Host "Health check passed with status: $($response.StatusCode)"
+          Write-Host "Response content: $($response.Content)"
         } catch {
           Write-Host "Server health check failed: $_"
+          Write-Host "=== Server Output ==="
           Get-Content server.log -ErrorAction SilentlyContinue
+          Write-Host "=== Server Errors ==="
+          Get-Content server_error.log -ErrorAction SilentlyContinue
           exit 1
         }
       timeout-minutes: 1
@@ -142,6 +258,12 @@ jobs:
         cat server.log || type server.log || echo "No server log found"
         echo "=== Server Error Log ==="
         cat server_error.log || type server_error.log || echo "No error log found"
+        
+        # Windows-specific: Check Event Viewer logs if available
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          echo "=== Recent Windows Application Events ==="
+          powershell -Command "Get-EventLog -LogName Application -Newest 10 -EntryType Error,Warning | Where-Object {$_.Source -like '*orochi*' -or $_.Message -like '*orochi*'} | Format-List" || echo "Could not retrieve Windows event logs"
+        fi
 
   test-downloaded-binaries:
     name: Test Downloaded Binary on ${{ matrix.os }}
@@ -182,3 +304,49 @@ jobs:
       run: |
         ./${{ matrix.binary_name }}${{ matrix.binary_suffix }} --help || true
       timeout-minutes: 1
+    
+    # Additional Windows-specific diagnostics
+    - name: Windows binary diagnostics
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Write-Host "=== Windows Binary Diagnostics ==="
+        $binary = "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}"
+        
+        # Check file properties
+        $file = Get-Item $binary
+        Write-Host "File: $($file.FullName)"
+        Write-Host "Size: $($file.Length) bytes"
+        Write-Host "Creation Time: $($file.CreationTime)"
+        Write-Host "Last Write Time: $($file.LastWriteTime)"
+        
+        # Check if it's a valid PE file
+        try {
+          $bytes = [System.IO.File]::ReadAllBytes($binary)
+          if ($bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A) {
+            Write-Host "Valid PE file signature found (MZ)"
+          } else {
+            Write-Host "WARNING: Invalid PE file signature"
+          }
+        } catch {
+          Write-Host "Error reading file: $_"
+        }
+        
+        # Try to get version info
+        try {
+          $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($binary)
+          Write-Host "FileVersion: $($versionInfo.FileVersion)"
+          Write-Host "ProductVersion: $($versionInfo.ProductVersion)"
+        } catch {
+          Write-Host "No version info available"
+        }
+        
+        # Check dependencies
+        Write-Host "`n=== Checking Dependencies ==="
+        try {
+          # This will show if there are any obvious missing DLLs
+          $proc = Start-Process -FilePath $binary -ArgumentList "--version" -NoNewWindow -PassThru -Wait
+          Write-Host "Exit code from --version: $($proc.ExitCode)"
+        } catch {
+          Write-Host "Error running binary: $_"
+        }
