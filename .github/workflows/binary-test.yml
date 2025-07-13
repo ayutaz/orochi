@@ -81,7 +81,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Write-Host "=== Validating Windows Binary ===""
+        Write-Host "=== Validating Windows Binary ==="
         
         # Check if binary has correct Windows subsystem
         try {
