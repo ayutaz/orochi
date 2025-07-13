@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+*.exe
+orochi
+
+# Go generated files
+*.pb.go
+
+# Test coverage
+coverage/
+*.coverage
+*.cover
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Lock files (format these manually if needed)
+package-lock.json
+go.sum
+
+# Binary files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+
+# Minified files
+*.min.js
+*.min.css

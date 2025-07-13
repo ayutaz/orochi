@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import {
   Box,
   Table,
@@ -9,8 +9,8 @@ import {
   TableRow,
   Typography,
   LinearProgress,
-} from '@mui/material'
-import { formatSpeed } from '../utils/format'
+} from '@mui/material';
+import { formatSpeed } from '../utils/format';
 
 // Mock data for now - this would come from the API
 const mockPeers = [
@@ -30,14 +30,13 @@ const mockPeers = [
     downloadSpeed: 0,
     uploadSpeed: 250000,
   },
-]
+];
 
 interface TorrentPeersProps {
-  torrentId: string
+  torrentId: string;
 }
 
-const TorrentPeers: React.FC<TorrentPeersProps> = ({ }) => {
-
+const TorrentPeers: React.FC<TorrentPeersProps> = ({}) => {
   if (mockPeers.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -45,7 +44,7 @@ const TorrentPeers: React.FC<TorrentPeersProps> = ({ }) => {
           No connected peers
         </Typography>
       </Box>
-    )
+    );
   }
 
   return (
@@ -94,7 +93,7 @@ const TorrentPeers: React.FC<TorrentPeersProps> = ({ }) => {
         </TableBody>
       </Table>
     </TableContainer>
-  )
-}
+  );
+};
 
-export default TorrentPeers
+export default TorrentPeers;

@@ -16,6 +16,19 @@ repos:
 
   - repo: local
     hooks:
+      - id: go-fmt
+        name: go fmt
+        entry: gofmt -w
+        language: system
+        types: [go]
+        
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd web-ui && npx prettier --write'
+        language: system
+        types_or: [javascript, jsx, ts, tsx, css, json, markdown]
+        pass_filenames: true
+        
       - id: go-test
         name: go test
         entry: go test ./...

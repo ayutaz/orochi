@@ -1,19 +1,19 @@
-import { useState, useEffect, useMemo } from 'react'
-import { createTheme } from '@mui/material/styles'
+import { useState, useEffect, useMemo } from 'react';
+import { createTheme } from '@mui/material/styles';
 
 export const useTheme = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode')
-    return saved ? JSON.parse(saved) : true
-  })
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : true;
+  });
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode))
-  }, [isDarkMode])
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode)
-  }
+    setIsDarkMode(!isDarkMode);
+  };
 
   const theme = useMemo(
     () =>
@@ -48,7 +48,7 @@ export const useTheme = () => {
         },
       }),
     [isDarkMode]
-  )
+  );
 
-  return { theme, isDarkMode, toggleTheme }
-}
+  return { theme, isDarkMode, toggleTheme };
+};

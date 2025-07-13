@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -14,7 +14,7 @@ import {
   Chip,
   LinearProgress,
   Button,
-} from '@mui/material'
+} from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   PlayArrow as PlayArrowIcon,
@@ -22,99 +22,104 @@ import {
   Delete as DeleteIcon,
   CloudDownload as CloudDownloadIcon,
   CloudUpload as CloudUploadIcon,
-} from '@mui/icons-material'
-import { api } from '../services/api'
-import { Torrent } from '../types/torrent'
-import { formatBytes, formatSpeed } from '../utils/format'
-import TorrentFiles from '../components/TorrentFiles'
-import TorrentPeers from '../components/TorrentPeers'
-import TorrentTrackers from '../components/TorrentTrackers'
-import { useWebSocket } from '../contexts/WebSocketContext'
+} from '@mui/icons-material';
+import { api } from '../services/api';
+import { Torrent } from '../types/torrent';
+import { formatBytes, formatSpeed } from '../utils/format';
+import TorrentFiles from '../components/TorrentFiles';
+import TorrentPeers from '../components/TorrentPeers';
+import TorrentTrackers from '../components/TorrentTrackers';
+import { useWebSocket } from '../contexts/WebSocketContext';
 
 const TorrentDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const { t } = useTranslation()
-  const { lastMessage } = useWebSocket()
-  const [tab, setTab] = useState(0)
-  const [torrent, setTorrent] = useState<Torrent | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { lastMessage } = useWebSocket();
+  const [tab, setTab] = useState(0);
+  const [torrent, setTorrent] = useState<Torrent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTorrent()
-  }, [id])
+    loadTorrent();
+  }, [id]);
 
   useEffect(() => {
     if (lastMessage?.type === 'torrents' && lastMessage.data) {
-      const updatedTorrent = lastMessage.data.find((t: Torrent) => t.id === id)
+      const updatedTorrent = lastMessage.data.find((t: Torrent) => t.id === id);
       if (updatedTorrent) {
-        setTorrent(updatedTorrent)
+        setTorrent(updatedTorrent);
       }
     }
-  }, [lastMessage, id])
+  }, [lastMessage, id]);
 
   const loadTorrent = async () => {
-    if (!id) return
-    
+    if (!id) return;
+
     try {
-      setLoading(true)
-      const data = await api.getTorrent(id)
-      setTorrent(data)
+      setLoading(true);
+      const data = await api.getTorrent(id);
+      setTorrent(data);
     } catch (err) {
-      setError('Failed to load torrent details')
-      console.error(err)
+      setError('Failed to load torrent details');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleStart = async () => {
-    if (!torrent) return
+    if (!torrent) return;
     try {
-      await api.startTorrent(torrent.id)
-      await loadTorrent()
+      await api.startTorrent(torrent.id);
+      await loadTorrent();
     } catch (error) {
-      console.error('Failed to start torrent:', error)
+      console.error('Failed to start torrent:', error);
     }
-  }
+  };
 
   const handleStop = async () => {
-    if (!torrent) return
+    if (!torrent) return;
     try {
-      await api.stopTorrent(torrent.id)
-      await loadTorrent()
+      await api.stopTorrent(torrent.id);
+      await loadTorrent();
     } catch (error) {
-      console.error('Failed to stop torrent:', error)
+      console.error('Failed to stop torrent:', error);
     }
-  }
+  };
 
   const handleDelete = async () => {
-    if (!torrent || !window.confirm(t('messages.confirmDelete'))) return
+    if (!torrent || !window.confirm(t('messages.confirmDelete'))) return;
     try {
-      await api.deleteTorrent(torrent.id)
-      navigate('/')
+      await api.deleteTorrent(torrent.id);
+      navigate('/');
     } catch (error) {
-      console.error('Failed to delete torrent:', error)
+      console.error('Failed to delete torrent:', error);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'downloading': return 'primary'
-      case 'seeding': return 'success'
-      case 'stopped': return 'default'
-      case 'error': return 'error'
-      default: return 'default'
+      case 'downloading':
+        return 'primary';
+      case 'seeding':
+        return 'success';
+      case 'stopped':
+        return 'default';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
     }
-  }
+  };
 
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
         <CircularProgress />
       </Box>
-    )
+    );
   }
 
   if (error || !torrent) {
@@ -128,7 +133,7 @@ const TorrentDetail: React.FC = () => {
         </Box>
         <Alert severity="error">{error || 'Torrent not found'}</Alert>
       </Box>
-    )
+    );
   }
 
   return (
@@ -151,12 +156,7 @@ const TorrentDetail: React.FC = () => {
               {t('common.start')}
             </Button>
           ) : (
-            <Button
-              variant="outlined"
-              startIcon={<StopIcon />}
-              onClick={handleStop}
-              sx={{ mr: 1 }}
-            >
+            <Button variant="outlined" startIcon={<StopIcon />} onClick={handleStop} sx={{ mr: 1 }}>
               {t('common.stop')}
             </Button>
           )}
@@ -190,7 +190,7 @@ const TorrentDetail: React.FC = () => {
               )}
             </Box>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               {t('torrentDetail.size')}
@@ -212,8 +212,8 @@ const TorrentDetail: React.FC = () => {
               />
               <Box display="flex" justifyContent="space-between">
                 <Typography variant="body2">
-                  {formatBytes(torrent.downloaded)} / {formatBytes(torrent.info.length)}
-                  ({torrent.progress.toFixed(1)}%)
+                  {formatBytes(torrent.downloaded)} / {formatBytes(torrent.info.length)}(
+                  {torrent.progress.toFixed(1)}%)
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {t('torrentDetail.uploaded')}: {formatBytes(torrent.uploaded)}
@@ -231,11 +231,9 @@ const TorrentDetail: React.FC = () => {
                     {t('torrentDetail.downloadSpeed')}
                   </Typography>
                 </Box>
-                <Typography variant="h6">
-                  {formatSpeed(torrent.downloadRate || 0)}
-                </Typography>
+                <Typography variant="h6">{formatSpeed(torrent.downloadRate || 0)}</Typography>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Box display="flex" alignItems="center" gap={0.5}>
                   <CloudUploadIcon fontSize="small" />
@@ -243,9 +241,7 @@ const TorrentDetail: React.FC = () => {
                     {t('torrentDetail.uploadSpeed')}
                   </Typography>
                 </Box>
-                <Typography variant="h6">
-                  {formatSpeed(torrent.uploadRate || 0)}
-                </Typography>
+                <Typography variant="h6">{formatSpeed(torrent.uploadRate || 0)}</Typography>
               </Grid>
             </>
           )}
@@ -262,7 +258,11 @@ const TorrentDetail: React.FC = () => {
       </Paper>
 
       <Paper sx={{ p: 3 }}>
-        <Tabs value={tab} onChange={(_, newValue) => setTab(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs
+          value={tab}
+          onChange={(_, newValue) => setTab(newValue)}
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
           <Tab label={t('torrentDetail.tabs.files')} />
           <Tab label={t('torrentDetail.tabs.peers')} />
           <Tab label={t('torrentDetail.tabs.trackers')} />
@@ -275,7 +275,7 @@ const TorrentDetail: React.FC = () => {
         </Box>
       </Paper>
     </Box>
-  )
-}
+  );
+};
 
-export default TorrentDetail
+export default TorrentDetail;

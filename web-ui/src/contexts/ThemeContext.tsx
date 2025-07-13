@@ -1,39 +1,39 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { ThemeProvider, createTheme } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
 interface ThemeContextType {
-  darkMode: boolean
-  toggleTheme: () => void
+  darkMode: boolean;
+  toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext)
+  const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
-  return context
-}
+  return context;
+};
 
 interface ThemeProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode')
-    return saved ? JSON.parse(saved) : false
-  })
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode))
-  }, [darkMode])
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
 
   const toggleTheme = () => {
-    setDarkMode(!darkMode)
-  }
+    setDarkMode(!darkMode);
+  };
 
   const theme = createTheme({
     palette: {
@@ -77,7 +77,7 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
         },
       },
     },
-  })
+  });
 
   return (
     <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
@@ -86,5 +86,5 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
         {children}
       </ThemeProvider>
     </ThemeContext.Provider>
-  )
-}
+  );
+};

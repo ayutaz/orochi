@@ -1,10 +1,10 @@
-import { Routes, Route } from 'react-router-dom'
-import { CustomThemeProvider } from './contexts/ThemeContext'
-import { WebSocketProvider } from './contexts/WebSocketContext'
-import Layout from './components/Layout'
-import TorrentList from './pages/TorrentList'
-import TorrentDetail from './pages/TorrentDetail'
-import Settings from './pages/Settings'
+import { Routes, Route } from 'react-router-dom';
+import { CustomThemeProvider } from './contexts/ThemeContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
+import Layout from './components/Layout';
+import TorrentList from './pages/TorrentList';
+import TorrentDetail from './pages/TorrentDetail';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
         </Layout>
       </WebSocketProvider>
     </CustomThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;

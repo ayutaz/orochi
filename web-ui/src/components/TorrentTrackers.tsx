@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableRow,
   Typography,
   Chip,
-} from '@mui/material'
+} from '@mui/material';
 
 // Mock data for now - this would come from the API
 const mockTrackers = [
@@ -34,26 +34,25 @@ const mockTrackers = [
     lastAnnounce: '10 minutes ago',
     nextAnnounce: 'in 5 minutes',
   },
-]
+];
 
 interface TorrentTrackersProps {
-  torrentId: string
+  torrentId: string;
 }
 
-const TorrentTrackers: React.FC<TorrentTrackersProps> = ({ }) => {
-
+const TorrentTrackers: React.FC<TorrentTrackersProps> = ({}) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'working':
-        return 'success'
+        return 'success';
       case 'error':
-        return 'error'
+        return 'error';
       case 'disabled':
-        return 'default'
+        return 'default';
       default:
-        return 'default'
+        return 'default';
     }
-  }
+  };
 
   return (
     <TableContainer>
@@ -81,11 +80,7 @@ const TorrentTrackers: React.FC<TorrentTrackersProps> = ({ }) => {
                 )}
               </TableCell>
               <TableCell align="center">
-                <Chip
-                  label={tracker.status}
-                  color={getStatusColor(tracker.status)}
-                  size="small"
-                />
+                <Chip label={tracker.status} color={getStatusColor(tracker.status)} size="small" />
               </TableCell>
               <TableCell align="center">
                 <Typography variant="body2">{tracker.peers}</Typography>
@@ -101,7 +96,7 @@ const TorrentTrackers: React.FC<TorrentTrackersProps> = ({ }) => {
         </TableBody>
       </Table>
     </TableContainer>
-  )
-}
+  );
+};
 
-export default TorrentTrackers
+export default TorrentTrackers;

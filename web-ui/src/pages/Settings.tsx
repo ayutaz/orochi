@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -14,15 +14,15 @@ import {
   Button,
   Divider,
   Alert,
-} from '@mui/material'
-import { Save as SaveIcon } from '@mui/icons-material'
-import i18n from '../i18n'
-import { api } from '../services/api'
-import { useTheme } from '../contexts/ThemeContext'
+} from '@mui/material';
+import { Save as SaveIcon } from '@mui/icons-material';
+import i18n from '../i18n';
+import { api } from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Settings: React.FC = () => {
-  const { t } = useTranslation()
-  const { darkMode, toggleTheme } = useTheme()
+  const { t } = useTranslation();
+  const { darkMode, toggleTheme } = useTheme();
   const [settings, setSettings] = useState({
     language: i18n.language,
     downloadPath: '',
@@ -33,19 +33,19 @@ const Settings: React.FC = () => {
     dht: true,
     peerExchange: true,
     localPeerDiscovery: true,
-  })
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  });
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSettings()
-  }, [])
+    loadSettings();
+  }, []);
 
   const loadSettings = async () => {
     try {
-      setLoading(true)
-      const data = await api.getSettings()
+      setLoading(true);
+      const data = await api.getSettings();
       setSettings({
         language: data.language || i18n.language,
         downloadPath: data.downloadPath || '',
@@ -56,42 +56,42 @@ const Settings: React.FC = () => {
         dht: data.dht !== false,
         peerExchange: data.peerExchange !== false,
         localPeerDiscovery: data.localPeerDiscovery !== false,
-      })
+      });
     } catch (err) {
-      setError('Failed to load settings')
-      console.error(err)
+      setError('Failed to load settings');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSave = async () => {
     try {
-      setError(null)
-      await api.updateSettings(settings)
-      
+      setError(null);
+      await api.updateSettings(settings);
+
       // Save language preference
-      localStorage.setItem('language', settings.language)
-      i18n.changeLanguage(settings.language)
-      
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      localStorage.setItem('language', settings.language);
+      i18n.changeLanguage(settings.language);
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setError('Failed to save settings')
-      console.error(err)
+      setError('Failed to save settings');
+      console.error(err);
     }
-  }
+  };
 
   const handleChange = (field: string, value: any) => {
-    setSettings(prev => ({ ...prev, [field]: value }))
-  }
+    setSettings((prev) => ({ ...prev, [field]: value }));
+  };
 
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
         <Typography>Loading...</Typography>
       </Box>
-    )
+    );
   }
 
   return (
@@ -122,12 +122,7 @@ const Settings: React.FC = () => {
           </Select>
         </FormControl>
         <FormControlLabel
-          control={
-            <Switch
-              checked={darkMode}
-              onChange={toggleTheme}
-            />
-          }
+          control={<Switch checked={darkMode} onChange={toggleTheme} />}
           label={t('settings.darkMode')}
         />
       </Paper>
@@ -218,16 +213,11 @@ const Settings: React.FC = () => {
         </Alert>
       )}
 
-      <Button
-        variant="contained"
-        startIcon={<SaveIcon />}
-        onClick={handleSave}
-        size="large"
-      >
+      <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} size="large">
         {t('common.save')}
       </Button>
     </Box>
-  )
-}
+  );
+};
 
-export default Settings
+export default Settings;
