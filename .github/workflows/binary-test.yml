@@ -146,36 +146,115 @@ jobs:
         
         # Start the process with more detailed error handling
         try {
-          $process = Start-Process -FilePath "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}" -ArgumentList "--port", "9999" -RedirectStandardOutput "server.log" -RedirectStandardError "server_error.log" -NoNewWindow -PassThru
+          # Create process with explicit working directory and environment
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = (Get-Item "./${{ matrix.binary_name }}${{ matrix.binary_suffix }}").FullName
+          $pinfo.Arguments = "--port 9999"
+          $pinfo.UseShellExecute = $false
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.RedirectStandardError = $true
+          $pinfo.WorkingDirectory = (Get-Location).Path
+          
+          # Ensure proper console handling
+          $pinfo.CreateNoWindow = $false
+          
+          $process = New-Object System.Diagnostics.Process
+          $process.StartInfo = $pinfo
+          
+          # Set up async output reading
+          $stdoutBuilder = New-Object System.Text.StringBuilder
+          $stderrBuilder = New-Object System.Text.StringBuilder
+          
+          $stdoutEvent = Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action {
+            if ($EventArgs.Data -ne $null) {
+              [void]$Event.MessageData.AppendLine($EventArgs.Data)
+            }
+          } -MessageData $stdoutBuilder
+          
+          $stderrEvent = Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action {
+            if ($EventArgs.Data -ne $null) {
+              [void]$Event.MessageData.AppendLine($EventArgs.Data)
+            }
+          } -MessageData $stderrBuilder
+          
+          Write-Host "Starting process..."
+          $started = $process.Start()
+          if (-not $started) {
+            throw "Failed to start process"
+          }
+          
+          $process.BeginOutputReadLine()
+          $process.BeginErrorReadLine()
+          
           Write-Host "Process started with ID: $($process.Id)"
           
-          # Check if process is still running after a short delay
-          Start-Sleep -Seconds 2
+          # Monitor process for 15 seconds
+          $timeout = 15
+          $elapsed = 0
+          while ($elapsed -lt $timeout -and -not $process.HasExited) {
+            Start-Sleep -Seconds 1
+            $elapsed++
+            
+            # Check every 5 seconds
+            if ($elapsed % 5 -eq 0) {
+              Write-Host "Process still running after $elapsed seconds..."
+              
+              # Write current output
+              $currentOutput = $stdoutBuilder.ToString()
+              $currentError = $stderrBuilder.ToString()
+              
+              if ($currentOutput) {
+                Write-Host "=== Current Output ==="
+                Write-Host $currentOutput
+              }
+              
+              if ($currentError) {
+                Write-Host "=== Current Errors ==="
+                Write-Host $currentError
+              }
+            }
+          }
+          
+          # Final status check
           if ($process.HasExited) {
-            Write-Host "ERROR: Process exited immediately with code: $($process.ExitCode)"
-            Write-Host "=== Server Output ==="
-            Get-Content server.log -ErrorAction SilentlyContinue
-            Write-Host "=== Server Errors ==="
-            Get-Content server_error.log -ErrorAction SilentlyContinue
+            Write-Host "ERROR: Process exited with code: $($process.ExitCode)"
+            
+            $finalOutput = $stdoutBuilder.ToString()
+            $finalError = $stderrBuilder.ToString()
+            
+            Write-Host "=== Final Server Output ==="
+            Write-Host $finalOutput
+            
+            Write-Host "=== Final Server Errors ==="
+            Write-Host $finalError
+            
+            # Save to files for later inspection
+            $finalOutput | Out-File -FilePath "server.log" -Encoding UTF8
+            $finalError | Out-File -FilePath "server_error.log" -Encoding UTF8
+            
+            Unregister-Event $stdoutEvent.Id
+            Unregister-Event $stderrEvent.Id
+            
             exit 1
           }
           
-          # Windows needs more time to start
-          Start-Sleep -Seconds 10
+          Write-Host "Server is running successfully"
           
-          # Final check if process is still running
-          if ($process.HasExited) {
-            Write-Host "ERROR: Process exited during startup with code: $($process.ExitCode)"
-            Write-Host "=== Server Output ==="
-            Get-Content server.log -ErrorAction SilentlyContinue
-            Write-Host "=== Server Errors ==="
-            Get-Content server_error.log -ErrorAction SilentlyContinue
-            exit 1
-          }
+          # Detach from the process and let it run
+          # Save output to files
+          $stdoutBuilder.ToString() | Out-File -FilePath "server.log" -Encoding UTF8
+          $stderrBuilder.ToString() | Out-File -FilePath "server_error.log" -Encoding UTF8
           
-          Write-Host "Server appears to be running"
+          Unregister-Event $stdoutEvent.Id
+          Unregister-Event $stderrEvent.Id
+          
+          # Save process ID for later cleanup
+          $process.Id | Out-File -FilePath "server.pid" -Encoding UTF8
+          
         } catch {
           Write-Host "ERROR starting process: $_"
+          Write-Host "Exception type: $($_.Exception.GetType().FullName)"
+          Write-Host "Stack trace: $($_.ScriptStackTrace)"
           exit 1
         }
       timeout-minutes: 2
@@ -248,6 +327,18 @@ jobs:
       if: always() && matrix.os == 'windows-latest'  
       shell: pwsh
       run: |
+        # Try to stop using saved PID first
+        if (Test-Path "server.pid") {
+          $pid = Get-Content "server.pid"
+          Write-Host "Stopping process with PID: $pid"
+          try {
+            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+          } catch {
+            Write-Host "Could not stop process with PID $pid: $_"
+          }
+        }
+        
+        # Also try to stop by name as backup
         Get-Process -Name "${{ matrix.binary_name }}" -ErrorAction SilentlyContinue | Stop-Process -Force
     
     - name: Display server logs on failure
