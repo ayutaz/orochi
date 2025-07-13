@@ -238,9 +238,85 @@ jobs:
             exit 1
           }
           
-          Write-Host "Server is running successfully"
+          Write-Host "Process is running, waiting for HTTP server to start..."
           
-          # Detach from the process and let it run
+          # Wait for HTTP server to actually start listening
+          $httpReady = $false
+          $httpTimeout = 30
+          $httpElapsed = 0
+          
+          while ($httpElapsed -lt $httpTimeout -and -not $httpReady) {
+            Start-Sleep -Seconds 1
+            $httpElapsed++
+            
+            # Try to connect to the port
+            try {
+              $tcpClient = New-Object System.Net.Sockets.TcpClient
+              $tcpClient.Connect("localhost", 9999)
+              if ($tcpClient.Connected) {
+                $tcpClient.Close()
+                $httpReady = $true
+                Write-Host "HTTP server is now listening on port 9999"
+              }
+            } catch {
+              # Not ready yet
+              if ($httpElapsed % 5 -eq 0) {
+                Write-Host "Waiting for HTTP server... ($httpElapsed seconds)"
+                
+                # Check if process is still running
+                if ($process.HasExited) {
+                  Write-Host "ERROR: Process exited while waiting for HTTP server"
+                  Write-Host "Exit code: $($process.ExitCode)"
+                  
+                  $finalOutput = $stdoutBuilder.ToString()
+                  $finalError = $stderrBuilder.ToString()
+                  
+                  Write-Host "=== Final Output ==="
+                  Write-Host $finalOutput
+                  Write-Host "=== Final Errors ==="
+                  Write-Host $finalError
+                  
+                  $finalOutput | Out-File -FilePath "server.log" -Encoding UTF8
+                  $finalError | Out-File -FilePath "server_error.log" -Encoding UTF8
+                  
+                  Unregister-Event $stdoutEvent.Id
+                  Unregister-Event $stderrEvent.Id
+                  
+                  exit 1
+                }
+              }
+            }
+          }
+          
+          if (-not $httpReady) {
+            Write-Host "ERROR: HTTP server did not start listening within $httpTimeout seconds"
+            
+            $finalOutput = $stdoutBuilder.ToString()
+            $finalError = $stderrBuilder.ToString()
+            
+            Write-Host "=== Final Output ==="
+            Write-Host $finalOutput
+            Write-Host "=== Final Errors ==="
+            Write-Host $finalError
+            
+            # Check if process is still running
+            if (-not $process.HasExited) {
+              Write-Host "Process is still running with PID: $($process.Id)"
+            } else {
+              Write-Host "Process exited with code: $($process.ExitCode)"
+            }
+            
+            $finalOutput | Out-File -FilePath "server.log" -Encoding UTF8
+            $finalError | Out-File -FilePath "server_error.log" -Encoding UTF8
+            
+            Unregister-Event $stdoutEvent.Id
+            Unregister-Event $stderrEvent.Id
+            
+            exit 1
+          }
+          
+          Write-Host "Server is running successfully and accepting connections"
+          
           # Save output to files
           $stdoutBuilder.ToString() | Out-File -FilePath "server.log" -Encoding UTF8
           $stderrBuilder.ToString() | Out-File -FilePath "server_error.log" -Encoding UTF8
