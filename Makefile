@@ -1,4 +1,4 @@
-.PHONY: test coverage lint build run clean test-watch ui-install ui-build ui-dev fmt fmt-check
+.PHONY: test coverage lint build run clean test-watch ui-install ui-build ui-dev ui-test ui-test-watch ui-test-coverage fmt fmt-check
 
 # Go parameters
 GOCMD=go
@@ -100,6 +100,18 @@ ui-build: ui-install
 # Run UI in development mode
 ui-dev:
 	cd web-ui && npm start
+
+# Run frontend tests
+ui-test:
+	cd web-ui && npm test -- --run
+
+# Run frontend tests in watch mode
+ui-test-watch:
+	cd web-ui && npm test
+
+# Run frontend tests with coverage
+ui-test-coverage:
+	cd web-ui && npm run test:coverage -- --run
 
 # Build without UI (for CI/testing)
 build-no-ui:
