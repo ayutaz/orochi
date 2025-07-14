@@ -2,6 +2,20 @@ linters-settings:
   errcheck:
     # Report about assignment of errors to blank identifiers
     check-blank: false
+  gosec:
+    # Exclude specific rules if needed
+    excludes:
+      - G104  # Unhandled errors (covered by errcheck)
+      - G304  # File path provided as taint input (we handle user input carefully)
+  lll:
+    line-length: 120
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentedOutCode
 
 linters:
   enable:
@@ -16,6 +30,10 @@ linters:
     - noctx
     - unparam
     - revive
+    - gosec
+    - staticcheck
+    - typecheck
+    - unused
   disable:
     - godox
 

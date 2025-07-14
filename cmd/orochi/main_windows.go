@@ -12,14 +12,14 @@ func init() {
 	if os.Getenv("OROCHI_NO_CONSOLE") == "1" {
 		return
 	}
-	
+
 	// On Windows, allocate a console if running from a non-console context
 	// This prevents the app from immediately closing when double-clicked
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	procAllocConsole := kernel32.NewProc("AllocConsole")
 	procAttachConsole := kernel32.NewProc("AttachConsole")
 	procGetConsoleWindow := kernel32.NewProc("GetConsoleWindow")
-	
+
 	// Check if we already have a console
 	ret, _, _ := procGetConsoleWindow.Call()
 	if ret == 0 {
@@ -29,7 +29,7 @@ func init() {
 			// Failed to attach to parent, allocate new console
 			procAllocConsole.Call()
 		}
-		
+
 		// Reopen stdout, stderr, stdin
 		os.Stdout = os.NewFile(uintptr(syscall.Stdout), "/dev/stdout")
 		os.Stderr = os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")

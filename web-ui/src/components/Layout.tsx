@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AppBar,
   Box,
@@ -15,39 +15,39 @@ import {
   Typography,
   useTheme as useMuiTheme,
   useMediaQuery,
-} from '@mui/material'
+} from '@mui/material';
 import {
   Menu as MenuIcon,
   CloudDownload as CloudDownloadIcon,
   Settings as SettingsIcon,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
-} from '@mui/icons-material'
-import { useTheme } from '../contexts/ThemeContext'
+} from '@mui/icons-material';
+import { useTheme } from '../contexts/ThemeContext';
 
-const drawerWidth = 240
+const drawerWidth = 240;
 
 interface LayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const muiTheme = useMuiTheme()
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'))
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { t } = useTranslation()
-  const { darkMode, toggleTheme } = useTheme()
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useTranslation();
+  const { darkMode, toggleTheme } = useTheme();
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen)
-  }
+    setMobileOpen(!mobileOpen);
+  };
 
   const menuItems = [
     { text: t('navigation.torrents'), icon: <CloudDownloadIcon />, path: '/' },
     { text: t('navigation.settings'), icon: <SettingsIcon />, path: '/settings' },
-  ]
+  ];
 
   const drawer = (
     <Box>
@@ -62,9 +62,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => {
-                navigate(item.path)
+                navigate(item.path);
                 if (isMobile) {
-                  setMobileOpen(false)
+                  setMobileOpen(false);
                 }
               }}
             >
@@ -75,7 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ))}
       </List>
     </Box>
-  )
+  );
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -104,10 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </IconButton>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant={isMobile ? 'temporary' : 'permanent'}
           open={isMobile ? mobileOpen : true}
@@ -137,7 +134,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </Box>
     </Box>
-  )
-}
+  );
+};
 
-export default Layout
+export default Layout;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
@@ -17,7 +17,7 @@ import {
   MenuItem,
   Backdrop,
   Paper,
-} from '@mui/material'
+} from '@mui/material';
 import {
   Add as AddIcon,
   PlayArrow as PlayArrowIcon,
@@ -26,168 +26,166 @@ import {
   MoreVert as MoreVertIcon,
   CloudDownload as CloudDownloadIcon,
   CloudUpload as CloudUploadIcon,
-} from '@mui/icons-material'
-import { api } from '../services/api'
-import { Torrent } from '../types/torrent'
-import { useWebSocket } from '../contexts/WebSocketContext'
-import AddTorrentDialog from '../components/AddTorrentDialog'
-import { formatBytes, formatSpeed } from '../utils/format'
+} from '@mui/icons-material';
+import { api } from '../services/api';
+import { Torrent } from '../types/torrent';
+import { useWebSocket } from '../contexts/WebSocketContext';
+import AddTorrentDialog from '../components/AddTorrentDialog';
+import { formatBytes, formatSpeed } from '../utils/format';
 
 const TorrentList: React.FC = () => {
-  const navigate = useNavigate()
-  const { t } = useTranslation()
-  const { lastMessage } = useWebSocket()
-  const [torrents, setTorrents] = useState<Torrent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [selectedTorrent, setSelectedTorrent] = useState<string | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [droppedFiles, setDroppedFiles] = useState<File[]>([])
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { lastMessage } = useWebSocket();
+  const [torrents, setTorrents] = useState<Torrent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedTorrent, setSelectedTorrent] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
 
   useEffect(() => {
-    loadTorrents()
-  }, [])
+    loadTorrents();
+  }, []);
 
   useEffect(() => {
     if (lastMessage) {
       if (lastMessage.type === 'torrents' && lastMessage.data) {
         // 直接トレントデータを更新
-        setTorrents(lastMessage.data)
+        setTorrents(lastMessage.data);
       } else if (lastMessage.type === 'torrent_update') {
         // 従来の更新通知の場合はAPIから取得
-        loadTorrents()
+        loadTorrents();
       }
     }
-  }, [lastMessage])
+  }, [lastMessage]);
 
   const loadTorrents = async () => {
     try {
-      const data = await api.getTorrents()
-      setTorrents(data)
+      const data = await api.getTorrents();
+      setTorrents(data);
     } catch (error) {
-      console.error('Failed to load torrents:', error)
+      console.error('Failed to load torrents:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleStartTorrent = async (id: string) => {
     try {
-      await api.startTorrent(id)
-      await loadTorrents()
+      await api.startTorrent(id);
+      await loadTorrents();
     } catch (error) {
-      console.error('Failed to start torrent:', error)
+      console.error('Failed to start torrent:', error);
     }
-  }
+  };
 
   const handleStopTorrent = async (id: string) => {
     try {
-      await api.stopTorrent(id)
-      await loadTorrents()
+      await api.stopTorrent(id);
+      await loadTorrents();
     } catch (error) {
-      console.error('Failed to stop torrent:', error)
+      console.error('Failed to stop torrent:', error);
     }
-  }
+  };
 
   const handleDeleteTorrent = async (id: string) => {
     if (window.confirm(t('messages.confirmDelete'))) {
       try {
-        await api.deleteTorrent(id)
-        await loadTorrents()
+        await api.deleteTorrent(id);
+        await loadTorrents();
       } catch (error) {
-        console.error('Failed to delete torrent:', error)
+        console.error('Failed to delete torrent:', error);
       }
     }
-    handleCloseMenu()
-  }
+    handleCloseMenu();
+  };
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, torrentId: string) => {
-    setAnchorEl(event.currentTarget)
-    setSelectedTorrent(torrentId)
-  }
+    setAnchorEl(event.currentTarget);
+    setSelectedTorrent(torrentId);
+  };
 
   const handleCloseMenu = () => {
-    setAnchorEl(null)
-    setSelectedTorrent(null)
-  }
+    setAnchorEl(null);
+    setSelectedTorrent(null);
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
+    e.preventDefault();
+    e.stopPropagation();
+
     // Check if files are torrent files
-    const items = Array.from(e.dataTransfer.items)
-    const hasTorrentFiles = items.some(item => {
+    const items = Array.from(e.dataTransfer.items);
+    const hasTorrentFiles = items.some((item) => {
       if (item.kind === 'file') {
-        const file = item.getAsFile()
-        return file && file.name.endsWith('.torrent')
+        const file = item.getAsFile();
+        return file && file.name.endsWith('.torrent');
       }
-      return false
-    })
-    
+      return false;
+    });
+
     if (hasTorrentFiles) {
-      setIsDragging(true)
+      setIsDragging(true);
     }
-  }, [])
+  }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
+    e.preventDefault();
+    e.stopPropagation();
+
     // Only set dragging to false if we're leaving the main container
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX
-    const y = e.clientY
-    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
     if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
-      setIsDragging(false)
+      setIsDragging(false);
     }
-  }, [])
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
 
-    const files = Array.from(e.dataTransfer.files).filter(
-      file => file.name.endsWith('.torrent')
-    )
-    
+    const files = Array.from(e.dataTransfer.files).filter((file) => file.name.endsWith('.torrent'));
+
     if (files.length > 0) {
       // AddTorrentDialogに渡すためにファイルを保存
-      setDroppedFiles(files)
-      setAddDialogOpen(true)
+      setDroppedFiles(files);
+      setAddDialogOpen(true);
     }
-  }, [])
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'downloading':
-        return 'primary'
+        return 'primary';
       case 'seeding':
-        return 'success'
+        return 'success';
       case 'stopped':
-        return 'default'
+        return 'default';
       case 'error':
-        return 'error'
+        return 'error';
       default:
-        return 'default'
+        return 'default';
     }
-  }
+  };
 
   const handleAddDialogClose = useCallback(() => {
-    setAddDialogOpen(false)
+    setAddDialogOpen(false);
     // ダイアログが閉じたらドロップされたファイルをクリア
-    setDroppedFiles([])
-  }, [])
+    setDroppedFiles([]);
+  }, []);
 
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
         <CircularProgress />
       </Box>
-    )
+    );
   }
 
   if (torrents.length === 0) {
@@ -218,13 +216,13 @@ const TorrentList: React.FC = () => {
             {t('torrent.addTorrent')}
           </Button>
         </Box>
-        <AddTorrentDialog 
-          open={addDialogOpen} 
-          onClose={handleAddDialogClose} 
+        <AddTorrentDialog
+          open={addDialogOpen}
+          onClose={handleAddDialogClose}
           onSuccess={loadTorrents}
           initialFiles={droppedFiles}
         />
-        
+
         {/* Drag & Drop Overlay */}
         <Backdrop
           open={isDragging}
@@ -254,7 +252,7 @@ const TorrentList: React.FC = () => {
           </Paper>
         </Backdrop>
       </Box>
-    )
+    );
   }
 
   return (
@@ -270,7 +268,11 @@ const TorrentList: React.FC = () => {
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box flex={1} onClick={() => navigate(`/torrent/${torrent.id}`)} sx={{ cursor: 'pointer' }}>
+                  <Box
+                    flex={1}
+                    onClick={() => navigate(`/torrent/${torrent.id}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
                     <Typography variant="h6" gutterBottom>
                       {torrent.info.name}
                     </Typography>
@@ -287,11 +289,15 @@ const TorrentList: React.FC = () => {
                         <>
                           <Box display="flex" alignItems="center" gap={0.5}>
                             <CloudDownloadIcon fontSize="small" />
-                            <Typography variant="body2">{formatSpeed(torrent.downloadRate || 0)}</Typography>
+                            <Typography variant="body2">
+                              {formatSpeed(torrent.downloadRate || 0)}
+                            </Typography>
                           </Box>
                           <Box display="flex" alignItems="center" gap={0.5}>
                             <CloudUploadIcon fontSize="small" />
-                            <Typography variant="body2">{formatSpeed(torrent.uploadRate || 0)}</Typography>
+                            <Typography variant="body2">
+                              {formatSpeed(torrent.uploadRate || 0)}
+                            </Typography>
                           </Box>
                         </>
                       )}
@@ -345,9 +351,9 @@ const TorrentList: React.FC = () => {
         <AddIcon />
       </Fab>
 
-      <AddTorrentDialog 
-        open={addDialogOpen} 
-        onClose={handleAddDialogClose} 
+      <AddTorrentDialog
+        open={addDialogOpen}
+        onClose={handleAddDialogClose}
         onSuccess={loadTorrents}
         initialFiles={droppedFiles}
       />
@@ -381,7 +387,7 @@ const TorrentList: React.FC = () => {
         </Paper>
       </Backdrop>
     </Box>
-  )
-}
+  );
+};
 
-export default TorrentList
+export default TorrentList;

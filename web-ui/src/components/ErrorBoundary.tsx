@@ -1,34 +1,34 @@
-import { Component, ErrorInfo, ReactNode } from 'react'
-import { Box, Typography, Button, Paper } from '@mui/material'
-import { Error as ErrorIcon } from '@mui/icons-material'
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { Box, Typography, Button, Paper } from '@mui/material';
+import { Error as ErrorIcon } from '@mui/icons-material';
 
 interface Props {
-  children: ReactNode
+  children: ReactNode;
 }
 
 interface State {
-  hasError: boolean
-  error: Error | null
+  hasError: boolean;
+  error: Error | null;
 }
 
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
-  }
+  };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo)
+    console.error('Uncaught error:', error, errorInfo);
   }
 
   private handleReset = () => {
-    this.setState({ hasError: false, error: null })
-    window.location.href = '/'
-  }
+    this.setState({ hasError: false, error: null });
+    window.location.href = '/';
+  };
 
   public render() {
     if (this.state.hasError) {
@@ -61,11 +61,11 @@ class ErrorBoundary extends Component<Props, State> {
             </Button>
           </Paper>
         </Box>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
+export default ErrorBoundary;

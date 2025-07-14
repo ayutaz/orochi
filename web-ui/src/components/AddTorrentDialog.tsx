@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -19,141 +19,146 @@ import {
   LinearProgress,
   Typography,
   Paper,
-} from '@mui/material'
-import { 
+} from '@mui/material';
+import {
   CloudUpload as CloudUploadIcon,
   Close as CloseIcon,
   InsertDriveFile as FileIcon,
-} from '@mui/icons-material'
-import { api } from '../services/api'
+} from '@mui/icons-material';
+import { api } from '../services/api';
 
 interface AddTorrentDialogProps {
-  open: boolean
-  onClose: () => void
-  onSuccess: () => void
-  initialFiles?: File[]
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  initialFiles?: File[];
 }
 
-const AddTorrentDialog: React.FC<AddTorrentDialogProps> = ({ open, onClose, onSuccess, initialFiles = [] }) => {
-  const { t } = useTranslation()
-  const [tab, setTab] = useState(0)
-  const [files, setFiles] = useState<File[]>([])
-  const [magnetLink, setMagnetLink] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
-  const [isDragging, setIsDragging] = useState(false)
+const AddTorrentDialog: React.FC<AddTorrentDialogProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  initialFiles = [],
+}) => {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState(0);
+  const [files, setFiles] = useState<File[]>([]);
+  const [magnetLink, setMagnetLink] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [isDragging, setIsDragging] = useState(false);
 
   // initialFilesが渡された場合、ファイルリストを初期化
   useEffect(() => {
     if (open && initialFiles.length > 0) {
-      setFiles(initialFiles)
-      setTab(0) // ファイルタブに切り替え
+      setFiles(initialFiles);
+      setTab(0); // ファイルタブに切り替え
     }
-  }, [open, initialFiles])
+  }, [open, initialFiles]);
 
   const handleClose = () => {
-    setFiles([])
-    setMagnetLink('')
-    setError('')
-    setUploadProgress({})
-    setTab(0)
-    onClose()
-  }
+    setFiles([]);
+    setMagnetLink('');
+    setError('');
+    setUploadProgress({});
+    setTab(0);
+    onClose();
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).filter(
-        file => file.name.endsWith('.torrent')
-      )
-      setFiles(prev => [...prev, ...newFiles])
-      setError('')
+      const newFiles = Array.from(event.target.files).filter((file) =>
+        file.name.endsWith('.torrent')
+      );
+      setFiles((prev) => [...prev, ...newFiles]);
+      setError('');
     }
-  }
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
 
-    const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      file => file.name.endsWith('.torrent')
-    )
-    
+    const droppedFiles = Array.from(e.dataTransfer.files).filter((file) =>
+      file.name.endsWith('.torrent')
+    );
+
     if (droppedFiles.length === 0) {
-      setError('Only .torrent files are allowed')
-      return
+      setError('Only .torrent files are allowed');
+      return;
     }
 
-    setFiles(prev => [...prev, ...droppedFiles])
-    setError('')
-  }, [])
+    setFiles((prev) => [...prev, ...droppedFiles]);
+    setError('');
+  }, []);
 
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index))
-  }
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
 
     try {
       if (tab === 0) {
         // File upload
         if (files.length === 0) {
-          setError('Please select at least one file')
-          setLoading(false)
-          return
+          setError('Please select at least one file');
+          setLoading(false);
+          return;
         }
 
         // Upload files sequentially to show progress
         for (let i = 0; i < files.length; i++) {
-          const file = files[i]
+          const file = files[i];
           try {
-            setUploadProgress(prev => ({ ...prev, [file.name]: 0 }))
-            
+            setUploadProgress((prev) => ({ ...prev, [file.name]: 0 }));
+
             // Simulate progress (in real app, use XMLHttpRequest for progress tracking)
-            await api.addTorrent(file)
-            
-            setUploadProgress(prev => ({ ...prev, [file.name]: 100 }))
+            await api.addTorrent(file);
+
+            setUploadProgress((prev) => ({ ...prev, [file.name]: 100 }));
           } catch (error) {
-            console.error(`Failed to upload ${file.name}:`, error)
-            setUploadProgress(prev => ({ ...prev, [file.name]: -1 }))
+            console.error(`Failed to upload ${file.name}:`, error);
+            setUploadProgress((prev) => ({ ...prev, [file.name]: -1 }));
           }
         }
       } else {
         // Magnet link
         if (!magnetLink.trim()) {
-          setError('Please enter a magnet link')
-          setLoading(false)
-          return
+          setError('Please enter a magnet link');
+          setLoading(false);
+          return;
         }
-        await api.addMagnet(magnetLink.trim())
+        await api.addMagnet(magnetLink.trim());
       }
-      
+
       // Wait a bit to show completion
       setTimeout(() => {
-        onSuccess()
-        handleClose()
-      }, 500)
+        onSuccess();
+        handleClose();
+      }, 500);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to add torrent')
+      setError(error instanceof Error ? error.message : 'Failed to add torrent');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -213,7 +218,7 @@ const AddTorrentDialog: React.FC<AddTorrentDialogProps> = ({ open, onClose, onSu
                     {files.map((file, index) => (
                       <ListItem key={`${file.name}-${index}`}>
                         <FileIcon sx={{ mr: 1, opacity: 0.6 }} />
-                        <ListItemText 
+                        <ListItemText
                           primary={file.name}
                           secondary={`${(file.size / 1024).toFixed(1)} KB`}
                         />
@@ -224,9 +229,9 @@ const AddTorrentDialog: React.FC<AddTorrentDialogProps> = ({ open, onClose, onSu
                                 Failed
                               </Typography>
                             ) : (
-                              <LinearProgress 
-                                variant="determinate" 
-                                value={uploadProgress[file.name]} 
+                              <LinearProgress
+                                variant="determinate"
+                                value={uploadProgress[file.name]}
                                 color={uploadProgress[file.name] === 100 ? 'success' : 'primary'}
                               />
                             )}
@@ -268,15 +273,15 @@ const AddTorrentDialog: React.FC<AddTorrentDialogProps> = ({ open, onClose, onSu
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>{t('common.cancel')}</Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
           disabled={loading || (tab === 0 ? files.length === 0 : !magnetLink.trim())}
         >
           {loading ? (
             <>
-              {tab === 0 && files.length > 1 
-                ? `Uploading (${Object.values(uploadProgress).filter(p => p === 100).length}/${files.length})...` 
+              {tab === 0 && files.length > 1
+                ? `Uploading (${Object.values(uploadProgress).filter((p) => p === 100).length}/${files.length})...`
                 : 'Uploading...'}
             </>
           ) : (
@@ -285,7 +290,7 @@ const AddTorrentDialog: React.FC<AddTorrentDialogProps> = ({ open, onClose, onSu
         </Button>
       </DialogActions>
     </Dialog>
-  )
-}
+  );
+};
 
-export default AddTorrentDialog
+export default AddTorrentDialog;

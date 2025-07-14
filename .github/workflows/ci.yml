@@ -80,6 +80,39 @@ jobs:
         version: v1.62.2
         args: --timeout=10m
     
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: web-ui/package-lock.json
+    
+    - name: Install frontend dependencies
+      run: |
+        cd web-ui
+        npm ci
+    
+    - name: Check frontend formatting
+      run: |
+        cd web-ui
+        npm run format:check
+    
+    - name: Check Go formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go files are not formatted. Please run 'go fmt ./...'"
+          gofmt -l .
+          exit 1
+        fi
+    
   build:
     name: Build
     runs-on: ${{ matrix.os }}

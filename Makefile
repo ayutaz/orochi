@@ -1,4 +1,4 @@
-.PHONY: test coverage lint build run clean test-watch ui-install ui-build ui-dev
+.PHONY: test coverage lint build run clean test-watch ui-install ui-build ui-dev fmt fmt-check
 
 # Go parameters
 GOCMD=go
@@ -24,6 +24,24 @@ coverage:
 	$(GOTEST) -v -race -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+
+# Format code
+fmt:
+	@echo "Formatting Go code..."
+	$(GOCMD) fmt ./...
+	@echo "Formatting frontend code..."
+	cd web-ui && npm run format
+
+# Check code formatting
+fmt-check:
+	@echo "Checking Go code formatting..."
+	@if [ -n "$$(gofmt -l .)" ]; then \
+		echo "Go files are not formatted. Please run 'make fmt'"; \
+		gofmt -l .; \
+		exit 1; \
+	fi
+	@echo "Checking frontend code formatting..."
+	cd web-ui && npm run format:check
 
 # Run linter
 lint:

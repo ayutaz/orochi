@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -70,7 +71,7 @@ func TestWebSocketHub(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				upgrader := createUpgrader(tt.allowedOrigins)
-				req := httptest.NewRequest("GET", "/ws", nil)
+				req := httptest.NewRequest("GET", "/ws", http.NoBody)
 				req.Header.Set("Origin", tt.requestOrigin)
 
 				result := upgrader.CheckOrigin(req)

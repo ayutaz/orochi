@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
@@ -14,61 +14,61 @@ import {
   Select,
   MenuItem,
   FormControl,
-} from '@mui/material'
+} from '@mui/material';
 import {
   Folder as FolderIcon,
   InsertDriveFile as FileIcon,
   Save as SaveIcon,
-} from '@mui/icons-material'
-import { Torrent, FileInfo } from '../types/torrent'
-import { formatBytes } from '../utils/format'
-import { api } from '../services/api'
+} from '@mui/icons-material';
+import { Torrent, FileInfo } from '../types/torrent';
+import { formatBytes } from '../utils/format';
+import { api } from '../services/api';
 
 interface TorrentFilesProps {
-  torrent: Torrent
+  torrent: Torrent;
 }
 
 const TorrentFiles: React.FC<TorrentFilesProps> = ({ torrent }) => {
-  const { t } = useTranslation()
-  const [files, setFiles] = useState<FileInfo[]>(torrent.info.files || [])
-  const [hasChanges, setHasChanges] = useState(false)
+  const { t } = useTranslation();
+  const [files, setFiles] = useState<FileInfo[]>(torrent.info.files || []);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const handleSelectAll = (checked: boolean) => {
-    setFiles(files.map(file => ({ ...file, selected: checked })))
-    setHasChanges(true)
-  }
+    setFiles(files.map((file) => ({ ...file, selected: checked })));
+    setHasChanges(true);
+  };
 
   const handleSelectFile = (index: number, checked: boolean) => {
-    const newFiles = [...files]
-    newFiles[index] = { ...newFiles[index], selected: checked }
-    setFiles(newFiles)
-    setHasChanges(true)
-  }
+    const newFiles = [...files];
+    newFiles[index] = { ...newFiles[index], selected: checked };
+    setFiles(newFiles);
+    setHasChanges(true);
+  };
 
   const handlePriorityChange = (index: number, priority: FileInfo['priority']) => {
-    const newFiles = [...files]
-    newFiles[index] = { ...newFiles[index], priority }
-    setFiles(newFiles)
-    setHasChanges(true)
-  }
+    const newFiles = [...files];
+    newFiles[index] = { ...newFiles[index], priority };
+    setFiles(newFiles);
+    setHasChanges(true);
+  };
 
   const handleSave = async () => {
     try {
       await api.updateFiles(
         torrent.id,
-        files.map(file => ({
+        files.map((file) => ({
           path: file.path.join('/'),
           selected: file.selected !== false,
         }))
-      )
-      setHasChanges(false)
+      );
+      setHasChanges(false);
     } catch (error) {
-      console.error('Failed to update files:', error)
+      console.error('Failed to update files:', error);
     }
-  }
+  };
 
-  const allSelected = files.every(file => file.selected !== false)
-  const someSelected = files.some(file => file.selected !== false) && !allSelected
+  const allSelected = files.every((file) => file.selected !== false);
+  const someSelected = files.some((file) => file.selected !== false) && !allSelected;
 
   if (!files || files.length === 0) {
     return (
@@ -80,34 +80,22 @@ const TorrentFiles: React.FC<TorrentFilesProps> = ({ torrent }) => {
           {formatBytes(torrent.info.length)}
         </Typography>
       </Box>
-    )
+    );
   }
 
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box>
-          <Button
-            size="small"
-            onClick={() => handleSelectAll(true)}
-            sx={{ mr: 1 }}
-          >
+          <Button size="small" onClick={() => handleSelectAll(true)} sx={{ mr: 1 }}>
             {t('torrentDetail.selectAll')}
           </Button>
-          <Button
-            size="small"
-            onClick={() => handleSelectAll(false)}
-          >
+          <Button size="small" onClick={() => handleSelectAll(false)}>
             {t('torrentDetail.deselectAll')}
           </Button>
         </Box>
         {hasChanges && (
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<SaveIcon />}
-            onClick={handleSave}
-          >
+          <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave}>
             Save Changes
           </Button>
         )}
@@ -140,7 +128,11 @@ const TorrentFiles: React.FC<TorrentFilesProps> = ({ torrent }) => {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    {file.path.length > 1 ? <FolderIcon sx={{ mr: 1 }} /> : <FileIcon sx={{ mr: 1 }} />}
+                    {file.path.length > 1 ? (
+                      <FolderIcon sx={{ mr: 1 }} />
+                    ) : (
+                      <FileIcon sx={{ mr: 1 }} />
+                    )}
                     <Typography variant="body2" noWrap>
                       {file.path.join('/')}
                     </Typography>
@@ -153,7 +145,9 @@ const TorrentFiles: React.FC<TorrentFilesProps> = ({ torrent }) => {
                   <FormControl size="small" variant="standard">
                     <Select
                       value={file.priority || 'normal'}
-                      onChange={(e) => handlePriorityChange(index, e.target.value as FileInfo['priority'])}
+                      onChange={(e) =>
+                        handlePriorityChange(index, e.target.value as FileInfo['priority'])
+                      }
                       disabled={file.selected === false}
                     >
                       <MenuItem value="low">{t('torrentDetail.priority.low')}</MenuItem>
@@ -168,7 +162,7 @@ const TorrentFiles: React.FC<TorrentFilesProps> = ({ torrent }) => {
         </Table>
       </TableContainer>
     </Box>
-  )
-}
+  );
+};
 
-export default TorrentFiles
+export default TorrentFiles;

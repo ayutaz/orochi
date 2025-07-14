@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -8,51 +8,51 @@ import {
   Button,
   TextField,
   Alert,
-} from '@mui/material'
-import { api } from '../services/api'
+} from '@mui/material';
+import { api } from '../services/api';
 
 interface AddMagnetDialogProps {
-  open: boolean
-  onClose: () => void
-  onSuccess: () => void
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
 const AddMagnetDialog: React.FC<AddMagnetDialogProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslation()
-  const [magnet, setMagnet] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { t } = useTranslation();
+  const [magnet, setMagnet] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!magnet.trim()) {
-      setError('Please enter a magnet link')
-      return
+      setError('Please enter a magnet link');
+      return;
     }
 
     if (!magnet.startsWith('magnet:?')) {
-      setError('Invalid magnet link format')
-      return
+      setError('Invalid magnet link format');
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      await api.addMagnet(magnet)
-      onSuccess()
-      handleClose()
+      await api.addMagnet(magnet);
+      onSuccess();
+      handleClose();
     } catch (err: any) {
-      setError(err.response?.data?.error || t('errors.addFailed'))
+      setError(err.response?.data?.error || t('errors.addFailed'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleClose = () => {
-    setMagnet('')
-    setError(null)
-    onClose()
-  }
+    setMagnet('');
+    setError(null);
+    onClose();
+  };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -86,7 +86,7 @@ const AddMagnetDialog: React.FC<AddMagnetDialogProps> = ({ open, onClose, onSucc
         </Button>
       </DialogActions>
     </Dialog>
-  )
-}
+  );
+};
 
-export default AddMagnetDialog
+export default AddMagnetDialog;
