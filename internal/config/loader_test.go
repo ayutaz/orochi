@@ -28,7 +28,7 @@ func TestLoader_LoadFromFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if writeErr := os.WriteFile(configPath, data, 0o644); writeErr != nil {
+	if writeErr := os.WriteFile(configPath, data, 0o600); writeErr != nil {
 		t.Fatal(writeErr)
 	}
 

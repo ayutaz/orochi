@@ -77,7 +77,7 @@ func TestManagerIntegration(t *testing.T) {
 		numOperations := 100
 
 		var wg sync.WaitGroup
-		errors := make(chan error, numGoroutines*numOperations)
+		errs := make(chan error, numGoroutines*numOperations)
 
 		// Launch goroutines for concurrent operations
 		for i := 0; i < numGoroutines; i++ {
@@ -91,13 +91,13 @@ func TestManagerIntegration(t *testing.T) {
 						// Add torrent
 						data := createTestTorrentWithName(fmt.Sprintf("routine%d-op%d.txt", routineID, j))
 						if _, err := manager.AddTorrent(data); err != nil {
-							errors <- err
+							errs <- err
 						}
 					case 1:
 						// Add magnet
 						magnet := fmt.Sprintf("magnet:?xt=urn:btih:%040d&dn=test%d", routineID*1000+j, j)
 						if _, err := manager.AddMagnet(magnet); err != nil {
-							errors <- err
+							errs <- err
 						}
 					case 2:
 						// List torrents
@@ -117,11 +117,11 @@ func TestManagerIntegration(t *testing.T) {
 
 		// Wait for all goroutines to complete
 		wg.Wait()
-		close(errors)
+		close(errs)
 
 		// Check for errors
 		var errorCount int
-		for err := range errors {
+		for err := range errs {
 			if err != nil {
 				errorCount++
 				t.Logf("concurrent operation error: %v", err)

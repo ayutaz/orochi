@@ -285,7 +285,7 @@ func (s *Server) saveConfig() error {
 	configPath := filepath.Join(s.config.DataDir, "config.json")
 
 	// Ensure data directory exists
-	if err := os.MkdirAll(s.config.DataDir, 0755); err != nil {
+	if err := os.MkdirAll(s.config.DataDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
@@ -296,7 +296,7 @@ func (s *Server) saveConfig() error {
 	}
 
 	// Write to file
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 

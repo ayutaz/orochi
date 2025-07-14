@@ -262,7 +262,7 @@ func (d *DB) UpdateTorrentProgress(id string, progress float64, downloaded, uplo
 }
 
 // UpdateTorrentStatus updates the status of a torrent.
-func (d *DB) UpdateTorrentStatus(id string, status string) error {
+func (d *DB) UpdateTorrentStatus(id, status string) error {
 	query := `
 	UPDATE torrents 
 	SET status = ?, updated_at = CURRENT_TIMESTAMP

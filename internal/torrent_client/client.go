@@ -357,7 +357,7 @@ func (t *Torrent) SavePath() string {
 }
 
 // SetFilePriority sets the priority for a specific file.
-func (t *Torrent) SetFilePriority(fileIndex int, priority int) error {
+func (t *Torrent) SetFilePriority(fileIndex, priority int) error {
 	files := t.torrent.Files()
 	if fileIndex < 0 || fileIndex >= len(files) {
 		return errors.InvalidInputf("file index %d out of range", fileIndex)
@@ -410,7 +410,8 @@ func (t *Torrent) GetStats() Stats {
 func (t *Torrent) countSeeders() int {
 	count := 0
 	for _, conn := range t.torrent.PeerConns() {
-		if conn.PeerPieces().GetCardinality() == uint64(t.torrent.NumPieces()) {
+		numPieces := t.torrent.NumPieces()
+		if numPieces >= 0 && conn.PeerPieces().GetCardinality() == uint64(numPieces) {
 			count++
 		}
 	}
