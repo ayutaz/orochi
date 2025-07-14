@@ -43,7 +43,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('should reset error state when reload button is clicked', () => {
-    const { rerender } = render(
+    render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>
@@ -53,15 +53,24 @@ describe('ErrorBoundary', () => {
 
     // Click Go to Home button
     const goToHomeButton = screen.getByText('Go to Home');
-    
-    // Mock window.location.href
-    const originalLocation = window.location;
-    delete (window as any).location;
-    window.location = { ...originalLocation, href: '' };
+
+    // Mock window.location.href setter
+    const mockHrefSetter = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: {
+        get href() {
+          return 'http://localhost:3000/test';
+        },
+        set href(value) {
+          mockHrefSetter(value);
+        },
+      },
+      configurable: true,
+    });
 
     goToHomeButton.click();
-    
+
     // Check that we navigated to home
-    expect(window.location.href).toBe('/');
+    expect(mockHrefSetter).toHaveBeenCalledWith('/');
   });
 });

@@ -41,7 +41,7 @@ class MockWebSocket {
     }, 0);
   }
 
-  send(data: string | ArrayBuffer | Blob | ArrayBufferView) {
+  send(_data: string | ArrayBuffer | Blob | ArrayBufferView) {
     // Mock implementation
   }
 
