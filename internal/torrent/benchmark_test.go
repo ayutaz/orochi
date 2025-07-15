@@ -2,6 +2,7 @@ package torrent
 
 import (
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/ayutaz/orochi/internal/config"
@@ -15,7 +16,10 @@ func BenchmarkListTorrents(b *testing.B) {
 		DataDir:     b.TempDir(),
 		DownloadDir: b.TempDir(),
 	}
-	log := logger.NewNop()
+	log := logger.New(&logger.Config{
+		Level:  logger.InfoLevel,
+		Output: io.Discard,
+	})
 
 	adapter, err := NewClientAdapter(cfg, log)
 	if err != nil {
@@ -36,7 +40,7 @@ func BenchmarkListTorrents(b *testing.B) {
 
 			// Add n torrents
 			for i := 0; i < n; i++ {
-				data := createTestTorrent(fmt.Sprintf("test%d", i))
+				data := createTestTorrentWithName(fmt.Sprintf("test%d", i))
 				_, err := adapter.AddTorrent(data)
 				if err != nil {
 					b.Fatalf("failed to add torrent: %v", err)
@@ -62,7 +66,10 @@ func BenchmarkGetTorrent(b *testing.B) {
 		DataDir:     b.TempDir(),
 		DownloadDir: b.TempDir(),
 	}
-	log := logger.NewNop()
+	log := logger.New(&logger.Config{
+		Level:  logger.InfoLevel,
+		Output: io.Discard,
+	})
 
 	adapter, err := NewClientAdapter(cfg, log)
 	if err != nil {
@@ -71,7 +78,7 @@ func BenchmarkGetTorrent(b *testing.B) {
 	defer adapter.Close()
 
 	// Add a test torrent
-	data := createTestTorrent("benchmark")
+	data := createTestTorrentWithName("benchmark")
 	id, err := adapter.AddTorrent(data)
 	if err != nil {
 		b.Fatalf("failed to add torrent: %v", err)
@@ -96,7 +103,10 @@ func BenchmarkBatchUpdate(b *testing.B) {
 		DataDir:     b.TempDir(),
 		DownloadDir: b.TempDir(),
 	}
-	log := logger.NewNop()
+	log := logger.New(&logger.Config{
+		Level:  logger.InfoLevel,
+		Output: io.Discard,
+	})
 
 	adapter, err := NewClientAdapter(cfg, log)
 	if err != nil {
@@ -108,7 +118,7 @@ func BenchmarkBatchUpdate(b *testing.B) {
 	numTorrents := 100
 	torrents := make([]string, 0, numTorrents)
 	for i := 0; i < numTorrents; i++ {
-		data := createTestTorrent(fmt.Sprintf("batch%d", i))
+		data := createTestTorrentWithName(fmt.Sprintf("batch%d", i))
 		id, err := adapter.AddTorrent(data)
 		if err != nil {
 			b.Fatalf("failed to add torrent: %v", err)
