@@ -165,4 +165,4 @@ const TorrentFiles: React.FC<TorrentFilesProps> = ({ torrent }) => {
   );
 };
 
-export default TorrentFiles;
+export default React.memo(TorrentFiles);
