@@ -112,7 +112,7 @@ export const useWebSocketOptimized = (url: string, options: WebSocketOptions = {
       clearTimeout(batchTimerRef.current);
       processBatchedMessages();
     }
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -120,15 +120,21 @@ export const useWebSocketOptimized = (url: string, options: WebSocketOptions = {
   }, [processBatchedMessages]);
 
   // Get messages by type
-  const getMessagesByType = useCallback((type: string) => {
-    return messageQueue.filter((msg) => msg.type === type);
-  }, [messageQueue]);
+  const getMessagesByType = useCallback(
+    (type: string) => {
+      return messageQueue.filter((msg) => msg.type === type);
+    },
+    [messageQueue]
+  );
 
   // Get latest message by type
-  const getLatestMessageByType = useCallback((type: string) => {
-    const messages = getMessagesByType(type);
-    return messages[messages.length - 1] || null;
-  }, [getMessagesByType]);
+  const getLatestMessageByType = useCallback(
+    (type: string) => {
+      const messages = getMessagesByType(type);
+      return messages[messages.length - 1] || null;
+    },
+    [getMessagesByType]
+  );
 
   useEffect(() => {
     connect();
