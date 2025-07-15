@@ -1,0 +1,1 @@
+const s=t=>{if(t===0)return"0 B";const o=1024,r=["B","KB","MB","GB","TB"],a=Math.floor(Math.log(t)/Math.log(o));return`${parseFloat((t/Math.pow(o,a)).toFixed(2))} ${r[a]}`},e=t=>`${s(t)}/s`;export{e as a,s as f};

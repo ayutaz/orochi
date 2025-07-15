@@ -163,6 +163,47 @@ func (c *Client) GetTorrent(infoHash string) (*Torrent, error) {
 	}, nil
 }
 
+// GetTorrentsBatch returns multiple torrents by their info hashes.
+// This is more efficient than calling GetTorrent multiple times.
+func (c *Client) GetTorrentsBatch(infoHashes []string) (map[string]*Torrent, error) {
+	result := make(map[string]*Torrent, len(infoHashes))
+
+	// Get all torrents once
+	allTorrents := c.client.Torrents()
+	torrentMap := make(map[metainfo.Hash]*torrent.Torrent, len(allTorrents))
+
+	// Build a map for O(1) lookup
+	for _, t := range allTorrents {
+		torrentMap[t.InfoHash()] = t
+	}
+
+	// Look up requested torrents
+	for _, infoHash := range infoHashes {
+		// Validate info hash length
+		if len(infoHash) != 40 {
+			c.logger.Warn("invalid info hash length in batch",
+				logger.String("info_hash", infoHash),
+				logger.Int("length", len(infoHash)))
+			continue
+		}
+
+		// Parse info hash
+		ih := metainfo.NewHashFromHex(infoHash)
+
+		// Find torrent
+		if t, ok := torrentMap[ih]; ok {
+			result[infoHash] = &Torrent{
+				torrent:    t,
+				client:     c,
+				addedAt:    time.Now(),
+				lastUpdate: time.Now(),
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // ListTorrents returns all torrents.
 func (c *Client) ListTorrents() []*Torrent {
 	torrents := c.client.Torrents()
@@ -220,9 +261,57 @@ func (t *Torrent) Length() int64 {
 	return t.torrent.Length()
 }
 
+// PieceLength returns the length of each piece.
+func (t *Torrent) PieceLength() int {
+	info := t.torrent.Info()
+	if info != nil {
+		return int(info.PieceLength)
+	}
+	return 0
+}
+
+// NumPieces returns the number of pieces in the torrent.
+func (t *Torrent) NumPieces() int {
+	return t.torrent.NumPieces()
+}
+
+// CompletedPieces returns the number of completed pieces.
+func (t *Torrent) CompletedPieces() int {
+	stats := t.torrent.Stats()
+	return stats.PiecesComplete
+}
+
 // BytesCompleted returns the number of bytes completed.
 func (t *Torrent) BytesCompleted() int64 {
 	return t.torrent.BytesCompleted()
+}
+
+// KnownPeers returns all known peers.
+func (t *Torrent) KnownPeers() []torrent.PeerInfo {
+	return t.torrent.KnownSwarm()
+}
+
+// Private returns whether the torrent is private.
+func (t *Torrent) Private() bool {
+	info := t.torrent.Info()
+	if info != nil && info.Private != nil {
+		return *info.Private
+	}
+	return false
+}
+
+// AddedAt returns when the torrent was added.
+func (t *Torrent) AddedAt() time.Time {
+	return t.addedAt
+}
+
+// CompletedAt returns when the torrent was completed.
+func (t *Torrent) CompletedAt() *time.Time {
+	if t.Progress() == 1 {
+		completed := time.Now()
+		return &completed
+	}
+	return nil
 }
 
 // Progress returns the download progress as a percentage (0-100).
@@ -242,11 +331,6 @@ func (t *Torrent) Status() string {
 		return "downloading"
 	}
 	return "stopped"
-}
-
-// AddedAt returns when the torrent was added.
-func (t *Torrent) AddedAt() time.Time {
-	return t.addedAt
 }
 
 // Stats returns the torrent's statistics.

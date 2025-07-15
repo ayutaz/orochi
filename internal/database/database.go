@@ -40,6 +40,11 @@ func NewDB(dbPath string, log logger.Logger) (*DB, error) {
 		return nil, errors.InternalErrorf("failed to open database: %v", err)
 	}
 
+	// Configure connection pool for better performance
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
 	if err := db.Ping(); err != nil {
 		return nil, errors.InternalErrorf("failed to ping database: %v", err)
 	}
@@ -47,6 +52,20 @@ func NewDB(dbPath string, log logger.Logger) (*DB, error) {
 	d := &DB{
 		db:     db,
 		logger: log,
+	}
+
+	// Enable WAL mode for better concurrency
+	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+		log.Warn("failed to enable WAL mode", logger.Err(err))
+	}
+
+	// Other performance optimizations
+	if _, err := db.Exec("PRAGMA synchronous=NORMAL"); err != nil {
+		log.Warn("failed to set synchronous mode", logger.Err(err))
+	}
+
+	if _, err := db.Exec("PRAGMA cache_size=10000"); err != nil {
+		log.Warn("failed to set cache size", logger.Err(err))
 	}
 
 	if err := d.createTables(); err != nil {
@@ -281,6 +300,52 @@ func (d *DB) UpdateTorrentStatus(id, status string) error {
 
 	if rows == 0 {
 		return errors.NotFoundf("torrent %s not found", id)
+	}
+
+	return nil
+}
+
+// ProgressUpdate represents a batch progress update.
+type ProgressUpdate struct {
+	ID         string
+	Progress   float64
+	Downloaded int64
+	Uploaded   int64
+}
+
+// UpdateTorrentProgressBatch updates progress for multiple torrents in a single transaction.
+func (d *DB) UpdateTorrentProgressBatch(updates []ProgressUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return errors.InternalErrorf("failed to begin transaction: %v", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	stmt, err := tx.Prepare(`
+		UPDATE torrents 
+		SET progress = ?, downloaded = ?, uploaded = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`)
+	if err != nil {
+		return errors.InternalErrorf("failed to prepare statement: %v", err)
+	}
+	defer stmt.Close()
+
+	for _, update := range updates {
+		_, err = stmt.Exec(update.Progress, update.Downloaded, update.Uploaded, update.ID)
+		if err != nil {
+			return errors.InternalErrorf("failed to update torrent %s: %v", update.ID, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.InternalErrorf("failed to commit transaction: %v", err)
 	}
 
 	return nil

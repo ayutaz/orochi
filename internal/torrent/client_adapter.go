@@ -199,6 +199,35 @@ func (a *ClientAdapter) createTorrentInfo(torr *torrentclient.Torrent) *TorrentI
 // ListTorrents implements Manager.
 func (a *ClientAdapter) ListTorrents() []*Torrent {
 	torrents := a.client.ListTorrents()
+
+	// Collect all info hashes
+	infoHashes := make([]string, 0, len(torrents))
+	for _, torr := range torrents {
+		infoHashes = append(infoHashes, torr.InfoHash())
+	}
+
+	// Batch fetch all torrents
+	torrentMap, err := a.client.GetTorrentsBatch(infoHashes)
+	if err != nil {
+		a.logger.Error("failed to batch fetch torrents", logger.Err(err))
+		// Fall back to individual fetching
+		return a.listTorrentsFallback(torrents)
+	}
+
+	// Build result
+	result := make([]*Torrent, 0, len(torrentMap))
+	for infoHash, torr := range torrentMap {
+		t := a.convertTorrent(torr, infoHash)
+		if t != nil {
+			result = append(result, t)
+		}
+	}
+
+	return result
+}
+
+// listTorrentsFallback is a fallback method using individual fetches.
+func (a *ClientAdapter) listTorrentsFallback(torrents []*torrentclient.Torrent) []*Torrent {
 	result := make([]*Torrent, 0, len(torrents))
 
 	for _, torr := range torrents {
@@ -213,6 +242,81 @@ func (a *ClientAdapter) ListTorrents() []*Torrent {
 	}
 
 	return result
+}
+
+// convertTorrent converts a torrent client torrent to a domain torrent.
+func (a *ClientAdapter) convertTorrent(torr *torrentclient.Torrent, infoHash string) *Torrent {
+	stats := torr.Stats()
+	status := StatusStopped
+
+	// Determine status based on torrent state
+	switch {
+	case stats.ActivePeers > 0 && torr.Progress() < 1:
+		status = StatusDownloading
+	case torr.Progress() == 1 && stats.ActivePeers > 0:
+		status = StatusSeeding
+	case torr.Progress() == 1:
+		status = StatusStopped
+	}
+
+	// Get additional info from database
+	dbRecord, _ := a.db.GetTorrent(infoHash)
+
+	// Build TorrentInfo
+	info := &TorrentInfo{
+		InfoHash:    infoHash,
+		Name:        torr.Name(),
+		Length:      torr.Length(),
+		PieceLength: int64(torr.PieceLength()),
+		Files:       a.convertFiles(torr),
+		Trackers:    a.getTrackers(dbRecord),
+	}
+
+	// Calculate download/upload stats
+	downloaded := int64(0)
+	uploaded := int64(0)
+	if dbRecord != nil {
+		downloaded = dbRecord.Downloaded
+		uploaded = dbRecord.Uploaded
+	}
+
+	return &Torrent{
+		ID:           infoHash,
+		Info:         info,
+		Status:       status,
+		Progress:     torr.Progress(),
+		Downloaded:   downloaded,
+		Uploaded:     uploaded,
+		DownloadRate: torr.DownloadRate(),
+		UploadRate:   torr.UploadRate(),
+		AddedAt:      time.Now(),
+		Error:        "",
+	}
+}
+
+// convertFiles converts torrent files to domain file info.
+func (a *ClientAdapter) convertFiles(torr *torrentclient.Torrent) []FileInfo {
+	files := torr.Files()
+	fileInfos := make([]FileInfo, len(files))
+
+	for i, f := range files {
+		fileInfos[i] = FileInfo{
+			Path:   strings.Split(f.Path, "/"),
+			Length: f.Length,
+		}
+	}
+
+	return fileInfos
+}
+
+// getTrackers extracts tracker info from database record.
+func (a *ClientAdapter) getTrackers(dbRecord *database.TorrentRecord) []string {
+	if dbRecord == nil {
+		return []string{}
+	}
+
+	// TODO: Parse trackers from metadata or store separately
+	return []string{}
 }
 
 // RemoveTorrent implements Manager.
