@@ -116,3 +116,10 @@ ui-test-coverage:
 # Build without UI (for CI/testing)
 build-no-ui:
 	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PATH)
+
+# Fix executable permissions for shell scripts
+fix-permissions:
+	@echo "Setting execute permissions for shell scripts..."
+	@find . -name "*.sh" -type f -exec chmod +x {} \;
+	@echo "Done. The following scripts now have execute permissions:"
+	@find . -name "*.sh" -type f -exec ls -la {} \;

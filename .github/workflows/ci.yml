@@ -150,8 +150,33 @@ jobs:
           exit 1
         fi
     
+  pre-build-check:
+    name: Pre-build Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check script permissions
+      run: |
+        # Check that all .sh files have execute permissions
+        failed=false
+        while IFS= read -r script; do
+          if [[ ! -x "$script" ]]; then
+            echo "ERROR: $script is not executable"
+            echo "Run: chmod +x $script"
+            failed=true
+          fi
+        done < <(find . -name "*.sh" -type f)
+        
+        if $failed; then
+          exit 1
+        fi
+    
   build:
     name: Build
+    needs: [test, lint, pre-build-check]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
