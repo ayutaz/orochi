@@ -472,7 +472,7 @@ jobs:
     
     steps:
     - name: Download binary
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: orochi-${{ matrix.download_os }}
     
