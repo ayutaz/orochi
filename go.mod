@@ -6,7 +6,7 @@ require (
 	github.com/anacrolix/torrent v1.58.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/zeebo/bencode v1.0.0
-	golang.org/x/crypto v0.40.0
+	golang.org/x/crypto v0.41.0
 	modernc.org/sqlite v1.38.2
 )
 
@@ -79,9 +79,9 @@ require (
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	lukechampine.com/blake3 v1.1.6 // indirect
 	modernc.org/libc v1.66.3 // indirect
